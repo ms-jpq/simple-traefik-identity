@@ -1,0 +1,6 @@
+{
+  "FSharp.enableAnalyzers": true,
+  "FSharp.enableTreeView": true,
+  "FSharp.externalAutocomplete": true,
+  "FSharp.fsacRuntime": "netcore"
+}

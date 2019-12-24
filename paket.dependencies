@@ -1,0 +1,9 @@
+source https://api.nuget.org/v3/index.json
+
+nuget FSharp.Core
+nuget FParsec
+nuget FSharp.Data
+
+
+github ms-jpq/fda
+github giraffe-fsharp/Giraffe src/Giraffe/GiraffeViewEngine.fs

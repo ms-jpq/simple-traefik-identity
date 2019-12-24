@@ -1,0 +1,16 @@
+version: "3.7"
+
+services:
+  #
+  # This file is used for development
+  #
+  # Use file below for reference
+  #
+  sti:
+    build: .
+    container_name: sti
+    environment:
+
+    ports:
+      - 5050:5050
+    volumes:
