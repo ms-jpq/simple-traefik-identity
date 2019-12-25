@@ -35,29 +35,5 @@ module Login =
                     a [ _href PROJECTURI ] [ str "github" ] ] ]
         |> List.singleton
 
-    let Route uri (name: string) =
-        let pretty = name.Replace('-', ' ').Replace('_', ' ')
-
-        let big =
-            name
-            |> Seq.truncate 2
-            |> Seq.map ToString
-            |> String.concat ""
-
-        figure []
-            [ a [ _href uri ] [ h1 [] [ str big ] ]
-              figcaption [] [ a [ _href uri ] [ str pretty ] ] ]
-
-    let disperse { name = n; uris = us } =
-        match us |> List.ofSeq with
-        | [ u ] -> Route u n |> List.singleton
-        | u -> u |> List.mapi (fun i u -> sprintf "%s-%d" n i |> Route u)
-
-
-    let Render background tit routes =
-        routes
-        |> List.ofSeq
-        |> List.Bind disperse
-        |> Layout
-        |> Page background tit
-        |> renderHtmlDocument
+    let Render background tit fff =
+        ""

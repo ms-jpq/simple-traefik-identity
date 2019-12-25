@@ -5,7 +5,7 @@ open Giraffe.GiraffeViewEngine
 open STI.Consts
 
 
-module Logout =
+module Denied =
 
     let css = sprintf "body { background-image: url(%s); }"
 

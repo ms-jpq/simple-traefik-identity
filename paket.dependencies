@@ -2,7 +2,8 @@ source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
 nuget FParsec
-nuget FSharp.Data
+nuget Legivel
+nuget System.IdentityModel.Tokens.Jwt
 
 
 github ms-jpq/fda

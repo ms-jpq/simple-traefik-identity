@@ -27,8 +27,6 @@ https://ms-jpq.github.io/simple-traefik-identity/
 
     let README = ""
 
-    let REQTIMEOUT = TimeSpan.FromSeconds(5.0)
-
     let WEBSRVPORT = 5050
 
     let DEFAULTTITLE = "Simple Traefik Identity"
