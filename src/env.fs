@@ -3,7 +3,6 @@ namespace STI
 
 open DomainAgnostic
 open Microsoft.Extensions.Logging
-open Microsoft.AspNetCore.Http
 open System.IO
 open Consts
 open State
@@ -15,7 +14,7 @@ module Env =
     type Variables =
         { logLevel: LogLevel
           port: int
-          baseUri: PathString
+          model: AuthModel
           title: string
           background: string }
 
@@ -54,13 +53,6 @@ module Env =
         find (prefix "PORT")
         |> Option.bind Parse.Int
         |> Option.Recover WEBSRVPORT
-
-
-    let private pBaseUri find =
-        let parse = Result.New(fun (s: string) -> PathString("/" + s.Trim('/')))
-        find (prefix "PATH_PREFIX")
-        |> Option.bind (parse >> Option.FromResult)
-        |> Option.Recover(PathString("/"))
 
 
     let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
@@ -130,9 +122,30 @@ module Env =
         secret, groups, users
 
     let private model secret (groups: RawGroup seq) (users: RawUser seq) =
+        let pDomain acc curr =
+            match (acc, curr) with
+            | _, "*" -> All
+            | All, _ -> All
+            | Named a, c -> a ++ [ c ] |> Named
 
+        let mkUser (user: RawUser) =
+            let chk =
+                user.groups
+                |> Set
+                |> flip Set.contains
 
-        ()
+            let domains =
+                groups
+                |> Seq.filter (fun g -> chk g.name)
+                |> Seq.Bind(fun g -> g.domains)
+                |> Seq.fold pDomain (Named Seq.empty)
+
+            { name = user.name
+              password = user.password
+              domains = domains }
+
+        { secret = secret
+          users = users |> Seq.map mkUser }
 
 
     let private config find =
@@ -166,6 +179,6 @@ module Env =
         let find = ENV() |> flip Map.tryFind
         { logLevel = pLog find
           port = pPort find
-          baseUri = pBaseUri find
+          model = config find
           title = pTitle find
           background = pBackground find }

@@ -2,6 +2,7 @@ namespace STI
 
 open DomainAgnostic
 open DomainAgnostic.Globals
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
@@ -19,8 +20,7 @@ module Server =
         logging.AddConsole() |> ignore
 
 
-    let private confServices deps (services: IServiceCollection) =
-        services.AddControllers() |> ignore
+    let private confServices deps (services: IServiceCollection) = services.AddControllers() |> ignore
 
 
     let private confApp baseUri (app: IApplicationBuilder) =
@@ -37,10 +37,10 @@ module Server =
         webhost.UseKestrel() |> ignore
         webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.port) |> ignore
         webhost.ConfigureServices(confServices deps) |> ignore
-        webhost.Configure(Action<IApplicationBuilder>(confApp deps.baseUri)) |> ignore
+        webhost.Configure(Action<IApplicationBuilder>(confApp (PathString "/"))) |> ignore
 
 
-    let Build<'D> (deps: Variables) =
+    let Build<'D>(deps: Variables) =
         let host = Host.CreateDefaultBuilder()
         host.UseContentRoot(CONTENTROOT) |> ignore
         host.ConfigureLogging(confLogging deps.logLevel) |> ignore
