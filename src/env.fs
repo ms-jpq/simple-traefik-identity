@@ -22,11 +22,13 @@ module Env =
     type RawGroup =
         { name: string
           domains: string seq }
+        static member Identity a b = a.name = b.name
 
     type RawUser =
         { name: string
           password: string
           groups: string seq }
+        static member Identity a b = a.name = b.name
 
     type ConfYaml =
         { secret: string option
@@ -127,24 +129,37 @@ module Env =
 
         secret, groups, users
 
-    let private model groups users = ()
+    let private model secret (groups: RawGroup seq) (users: RawUser seq) =
+
+
+        ()
 
 
     let private config find =
         let yaml = find (prefix "CONF_FILE") |> Option.defaultValue CONFFILE
         let s1, g1, u1 = pConf find
         let s2, g2, u2 = pYaml yaml
-        let groups = g1 ++ g2
-        let users = u1 ++ u2
+
+        let rg acc curr =
+            match acc |> Seq.tryFind (RawGroup.Identity curr) with
+            | Some _ -> acc
+            | None -> acc ++ [ curr ]
+
+        let ru acc curr =
+            match acc |> Seq.tryFind (RawUser.Identity curr) with
+            | Some _ -> acc
+            | None -> acc ++ [ curr ]
 
         let secret =
             match (s1, s2) with
             | Some s1, _ -> s1
             | _, Some s2 -> s2
-            | _ -> sprintf "Required |SECRET| in either %s or ENV - SECRET" yaml |> failwith
+            | _ -> sprintf "Did not find |SECRET| in either %s or ENV - SECRET" yaml |> failwith
 
-        let m = model groups users
-        ()
+        let groups = Seq.fold rg Seq.empty (g1 ++ g2)
+        let users = Seq.fold ru Seq.empty (u1 ++ u2)
+
+        model secret groups users
 
 
     let Opts() =
