@@ -15,11 +15,10 @@
   </ImportGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/consts.fs" />
-    <Compile Include="(MSBuildThisFileDirectory)/conf.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/env.fs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/logout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/deny.fs" />

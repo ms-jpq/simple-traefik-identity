@@ -1,7 +1,17 @@
-namespace STI.State
+namespace STI
 
+
+open DomainAgnostic
 open System
+open Consts
 
+module State =
 
-type State =
-    { lastupdate: DateTime option }
+    type Group =
+        { name: string
+          domains: Uri seq }
+
+    type User =
+        { name: string
+          password: string
+          groups: Group seq }

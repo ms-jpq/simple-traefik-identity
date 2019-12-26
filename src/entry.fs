@@ -15,9 +15,6 @@ module Entry =
 
         let deps = Opts()
 
-        use state =
-            new GlobalVar<State>({ lastupdate = None })
-
-        use server = Server.Build deps state
+        use server = Server.Build deps
         server.Run()
         0
