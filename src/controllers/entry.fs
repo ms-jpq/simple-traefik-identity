@@ -6,15 +6,19 @@ open STI.State
 open STI.Views.Login
 open DomainAgnostic
 open Microsoft.AspNetCore.Mvc
+open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Primitives
+open System
 open System.IO
 open System.Collections.Generic
-open Microsoft.Extensions.Primitives
 
 
 [<Route("")>]
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
     inherit Controller()
+
+    let cOpts = deps.Boxed.cookie
 
     let authorize domain path =
         ()
@@ -28,23 +32,21 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
             return domain, path } |> Option.ForceUnwrap err
 
     let checkAuth cookies =
-        let auth = Map.tryFind deps.Boxed.cookieName cookies
+        let auth = Map.tryFind cOpts.name cookies
         true
 
-
-    member private self.Read() =
+    let read (req: HttpRequest) =
         async {
-            let ctx = self.HttpContext.Request
-            use stream = new StreamReader(ctx.Body)
+            use stream = new StreamReader(req.Body)
 
             let headers =
-                ctx.Headers
+                req.Headers
                 |> Seq.cast<KeyValuePair<string, StringValues>>
                 |> Seq.map (fun x -> x.Key, x.Value)
                 |> Map.ofSeq
 
             let cookies =
-                ctx.Cookies
+                req.Cookies
                 |> Seq.cast<KeyValuePair<string, string>>
                 |> Seq.map (fun x -> x.Key, x.Value)
                 |> Map.ofSeq
@@ -53,11 +55,20 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
             return headers, cookies, body
         }
 
+    let writeCokie name domain content (resp: HttpResponse) =
+        let policy = CookieOptions()
+        policy.HttpOnly <- true
+        policy.SameSite <- SameSiteMode.Strict
+        policy.Secure <- cOpts.secure
+        policy.MaxAge <- Nullable cOpts.maxAge
+        policy.Domain <- domain
+        resp.Cookies.Append(name, content, policy)
+
 
     [<Route("")>]
     member self.Index() =
         async {
-            let! headers, cookies, body = self.Read()
+            let! headers, cookies, body = read self.HttpContext.Request
             let domain, path = fdAuth headers
             let authStat = checkAuth cookies
 

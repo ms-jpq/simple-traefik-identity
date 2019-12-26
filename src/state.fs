@@ -8,6 +8,11 @@ open Consts
 
 module State =
 
+    type CookieOpts =
+        { name: string
+          secure: bool
+          maxAge: TimeSpan }
+
     type Domains =
         | Named of string seq
         | All

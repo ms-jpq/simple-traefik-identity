@@ -15,7 +15,7 @@ module Env =
         { logLevel: LogLevel
           port: int
           model: AuthModel
-          cookieName: string
+          cookie: CookieOpts
           title: string
           background: string }
 
@@ -55,6 +55,16 @@ module Env =
         |> Option.bind Parse.Int
         |> Option.Recover WEBSRVPORT
 
+    let private pInsecure find =
+        find (prefix "INSECURE")
+        |> Option.bind Parse.Bool
+        |> Option.defaultValue false
+        |> not
+
+    let private pCookie find =
+        { name = COOKIENAME
+          secure = pInsecure find
+          maxAge = COOKIEMAXAGE }
 
     let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
 
@@ -93,7 +103,6 @@ module Env =
                 |> Seq.ofList
 
             y.secret, groups, users
-
 
 
     let private pGroup (group: string) =
@@ -191,6 +200,6 @@ module Env =
         { logLevel = pLog find
           port = pPort find
           model = config find
-          cookieName = COOKIENAME
+          cookie = pCookie find
           title = pTitle find
           background = pBackground find }
