@@ -1,7 +1,6 @@
 source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
-nuget FParsec
 nuget Legivel
 nuget System.IdentityModel.Tokens.Jwt
 
