@@ -14,6 +14,7 @@ open Microsoft.Extensions.Primitives
 open Microsoft.IdentityModel.Tokens
 open System
 open System.IO
+open System.Text
 open System.Collections.Generic
 open System.IdentityModel.Tokens.Jwt
 
@@ -24,6 +25,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
+
+    let credentials =
+        let bytes = deps.Boxed.model.secret |> Encoding.UTF8.GetBytes
+        let key = SymmetricSecurityKey(bytes)
+        let algo = SecurityAlgorithms.HmacSha256Signature
+        SigningCredentials(key, algo)
+
 
     let read (req: HttpRequest) =
         async {
@@ -56,6 +64,38 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy
 
 
+    let newJTW claims =
+        let now = DateTime.UtcNow
+
+        let desc =
+            let desc = SecurityTokenDescriptor()
+            desc.SigningCredentials <- credentials
+            desc.Issuer <- jOpts.issuer
+            desc.IssuedAt <- now |> Nullable
+            desc.Expires <- now + jOpts.lifespan |> Nullable
+            desc.Claims <-
+                claims
+                |> Map.toSeq
+                |> dict
+            desc
+
+        JwtSecurityTokenHandler().CreateEncodedJwt(desc)
+
+
+    let validateJWT (token: string) =
+        let validation = TokenValidationParameters()
+        try
+            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, ref null)
+
+            let claims =
+                principal.Claims
+                |> Seq.map (fun c -> c.Type, c.Value)
+                |> Map.ofSeq
+            echo claims
+            true
+        with _ -> false
+
+
     let checkAuth cookies =
         let auth = Map.tryFind cOpts.name cookies
         auth
@@ -70,20 +110,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let authorize domain path (resp: HttpResponse) =
         let policy = cookiePolicy domain
-        let now = DateTime.UtcNow
 
-        let cred =
-            let cred = 12
-            cred
-
-        let desc =
-            let desc = SecurityTokenDescriptor()
-            desc.Issuer <- jOpts.issuer
-            desc.IssuedAt <- now |> Nullable
-            desc.Expires <- now + jOpts.lifespan |> Nullable
-            desc
-
-        let token = JwtSecurityTokenHandler().CreateEncodedJwt(desc)
+        let token = newJTW Map.empty
         resp.Cookies.Append(cOpts.name, token, policy)
 
     let deauthorize domain path (resp: HttpResponse) =
