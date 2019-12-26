@@ -20,19 +20,19 @@ module Env =
 
     type RawGroup =
         { name: string
-          domains: string seq }
+          domains: string list }
         static member Identity a b = a.name = b.name
 
     type RawUser =
         { name: string
           password: string
-          groups: string seq }
+          groups: string list }
         static member Identity a b = a.name = b.name
 
     type ConfYaml =
         { secret: string option
-          groups: RawGroup seq option
-          users: RawUser seq option }
+          groups: RawGroup list option
+          users: RawUser list option }
 
     let private prefix = sprintf "%s_%s" ENVPREFIX
 
@@ -61,13 +61,18 @@ module Env =
 
 
     let private pYaml conf =
+        File.ReadAllText conf
+        |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
+        |> echo
+
         let mapSucc res =
             match res with
             | Success s -> Some s.Data
             | Error _ -> None
 
         let parse yml =
-            Deserialize<ConfYaml> yml
+            yml
+            |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
             |> Seq.choose mapSucc
             |> Seq.tryHead
 
@@ -79,8 +84,16 @@ module Env =
         match yaml with
         | None -> None, Seq.empty, Seq.empty
         | Some y ->
-            let groups = y.groups |> Option.defaultValue Seq.empty
-            let users = y.users |> Option.defaultValue Seq.empty
+            let groups =
+                y.groups
+                |> Option.defaultValue []
+                |> Seq.ofList
+
+            let users =
+                y.users
+                |> Option.defaultValue []
+                |> Seq.ofList
+
             y.secret, groups, users
 
 
@@ -89,7 +102,7 @@ module Env =
         match group.Split(":") |> List.ofArray with
         | [ name; domains ] ->
             { name = name
-              domains = domains.Split(",") |> Seq.ofArray }
+              domains = domains.Split(",") |> List.ofArray }
             |> Some
         | _ -> None
 
@@ -98,7 +111,7 @@ module Env =
         | [ name; password; groups ] ->
             { name = name
               password = password
-              groups = groups.Split(",") |> Seq.ofArray }
+              groups = groups.Split(",") |> List.ofArray }
             |> Some
         | _ -> None
 
@@ -137,7 +150,7 @@ module Env =
             let domains =
                 groups
                 |> Seq.filter (fun g -> chk g.name)
-                |> Seq.Bind(fun g -> g.domains)
+                |> Seq.Bind(fun g -> g.domains |> Seq.ofList)
                 |> Seq.fold pDomain (Named Seq.empty)
 
             { name = user.name
@@ -167,7 +180,7 @@ module Env =
             match (s1, s2) with
             | Some s1, _ -> s1
             | _, Some s2 -> s2
-            | _ -> sprintf "Did not find |SECRET| in either %s or ENV - SECRET" yaml |> failwith
+            | _ -> sprintf "Did not find |SECRET| in either ENVIRONMENT or %s" yaml |> failwith
 
         let groups = Seq.fold rg Seq.empty (g1 ++ g2)
         let users = Seq.fold ru Seq.empty (u1 ++ u2)
