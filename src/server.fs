@@ -23,6 +23,7 @@ module Server =
     let private confServices deps (globals: GlobalVar<'D>) (services: IServiceCollection) =
         services.AddSingleton(Container deps) |> ignore
         services.AddSingleton(globals) |> ignore
+        services.AddControllers() |> ignore
 
 
     let private confApp baseUri (app: IApplicationBuilder) =

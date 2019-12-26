@@ -19,6 +19,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)/pages/layout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/logout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/deny.fs" />
