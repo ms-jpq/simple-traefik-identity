@@ -61,8 +61,12 @@ module Env =
         |> Option.defaultValue false
         |> not
 
+    let private pDomain find =
+        find (prefix "DOMAIN")
+
     let private pCookie find =
         { name = COOKIENAME
+          domain = pDomain find
           secure = pInsecure find
           maxAge = COOKIEMAXAGE }
 

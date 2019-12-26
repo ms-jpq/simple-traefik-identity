@@ -10,6 +10,7 @@ module State =
 
     type CookieOpts =
         { name: string
+          domain: string option
           secure: bool
           maxAge: TimeSpan }
 

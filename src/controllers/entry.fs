@@ -20,21 +20,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
 
     let cOpts = deps.Boxed.cookie
 
-    let authorize domain path =
-        ()
-        ()
-
-    let fdAuth headers =
-        let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
-        maybe {
-            let! domain = Map.tryFind "X-Forwarded-Host" headers
-            let! path = Map.tryFind "X-Forwarded-Uri" headers
-            return domain, path } |> Option.ForceUnwrap err
-
-    let checkAuth cookies =
-        let auth = Map.tryFind cOpts.name cookies
-        true
-
     let read (req: HttpRequest) =
         async {
             use stream = new StreamReader(req.Body)
@@ -55,14 +40,37 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
             return headers, cookies, body
         }
 
-    let writeCokie name domain content (resp: HttpResponse) =
+
+    let cookiePolicy domain =
         let policy = CookieOptions()
         policy.HttpOnly <- true
         policy.SameSite <- SameSiteMode.Strict
         policy.Secure <- cOpts.secure
         policy.MaxAge <- Nullable cOpts.maxAge
-        policy.Domain <- domain
-        resp.Cookies.Append(name, content, policy)
+        policy.Domain <- cOpts.domain |> Option.defaultValue domain
+        policy
+
+    let checkAuth cookies =
+        let auth = Map.tryFind cOpts.name cookies
+        auth
+
+    let fdAuth headers =
+        let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
+        maybe {
+            let! domain = Map.tryFind "X-Forwarded-Host" headers
+            let! path = Map.tryFind "X-Forwarded-Uri" headers
+            return domain, path } |> Option.ForceUnwrap err
+
+
+    let authorize domain path (resp: HttpResponse) =
+        let policy = cookiePolicy domain
+        let authContent = ""
+
+        resp.Cookies.Append(cOpts.name, authContent, policy)
+
+    let deauthorize domain path (resp: HttpResponse) =
+        let policy = cookiePolicy domain
+        resp.Cookies.Delete(cOpts.name, policy)
 
 
     [<Route("")>]
