@@ -29,3 +29,5 @@ https://ms-jpq.github.io/simple-traefik-identity/
     let WEBSRVPORT = 5050
 
     let DEFAULTTITLE = "Simple Traefik Identity"
+
+    let COOKIENAME = "_sti_auth"

@@ -1,6 +1,7 @@
 namespace STI.Controllers
 
 open STI.Env
+open STI.Consts
 open STI.State
 open STI.Views.Login
 open DomainAgnostic
@@ -10,23 +11,25 @@ open System.IO
 open System.Collections.Generic
 open Microsoft.Extensions.Primitives
 
+
 [<Route("")>]
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
     inherit Controller()
-
-    let checkAuth cookies domain path =
-        ()
-        true
 
     let authorize domain path =
         ()
         ()
 
     let fdAuth headers =
+        let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
         maybe {
             let! domain = Map.tryFind "X-Forwarded-Host" headers
             let! path = Map.tryFind "X-Forwarded-Uri" headers
-            return domain, path }
+            return domain, path } |> Option.ForceUnwrap err
+
+    let checkAuth cookies =
+        let auth = Map.tryFind deps.Boxed.cookieName cookies
+        true
 
 
     member private self.Read() =
@@ -55,7 +58,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
     member self.Index() =
         async {
             let! headers, cookies, body = self.Read()
-            let domain, path = fdAuth headers |> Option.ForceUnwrap ""
+            let domain, path = fdAuth headers
+            let authStat = checkAuth cookies
 
 
             echo "\n\n\n"

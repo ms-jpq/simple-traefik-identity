@@ -15,6 +15,7 @@ module Env =
         { logLevel: LogLevel
           port: int
           model: AuthModel
+          cookieName: string
           title: string
           background: string }
 
@@ -190,5 +191,6 @@ module Env =
         { logLevel = pLog find
           port = pPort find
           model = config find
+          cookieName = COOKIENAME
           title = pTitle find
           background = pBackground find }
