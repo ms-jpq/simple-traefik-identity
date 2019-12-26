@@ -61,9 +61,6 @@ module Env =
 
 
     let private pYaml conf =
-        File.ReadAllText conf
-        |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
-        |> echo
 
         let mapSucc res =
             match res with
