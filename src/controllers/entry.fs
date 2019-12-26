@@ -86,26 +86,32 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         let validation = TokenValidationParameters()
         try
             let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, ref null)
-
-            let claims =
-                principal.Claims
-                |> Seq.map (fun c -> c.Type, c.Value)
-                |> Map.ofSeq
-            echo claims
-            true
-        with _ -> false
+            principal.Claims
+            |> Seq.map (fun c -> c.Type, c.Value)
+            |> Map.ofSeq
+            |> Some
+        with _ -> None
 
 
     let checkAuth cookies =
-        let auth = Map.tryFind cOpts.name cookies
+        let auth =
+            cookies
+            |> Map.tryFind cOpts.name
+            |> Option.bind validateJWT
         auth
 
     let fdAuth headers =
         let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
         maybe {
-            let! domain = Map.tryFind "X-Forwarded-Host" headers
-            let! path = Map.tryFind "X-Forwarded-Uri" headers
-            return domain, path } |> Option.ForceUnwrap err
+            let! domain = headers
+                          |> Map.tryFind "X-Forwarded-Host"
+                          |> Option.map ToString
+            let! path = headers
+                        |> Map.tryFind "X-Forwarded-Uri"
+                        |> Option.map ToString
+            return domain, path
+        }
+        |> Option.ForceUnwrap err
 
 
     let authorize domain path (resp: HttpResponse) =
@@ -126,8 +132,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let domain, path = fdAuth headers
             let authStat = checkAuth cookies
 
-
-            echo "\n\n\n"
 
             return self.Content("", "text/html") :> ActionResult
         }
