@@ -20,7 +20,9 @@ module Server =
         logging.AddConsole() |> ignore
 
 
-    let private confServices deps (services: IServiceCollection) = services.AddControllers() |> ignore
+    let private confServices deps (services: IServiceCollection) =
+        services.AddSingleton(Container deps) |> ignore
+        services.AddControllers() |> ignore
 
 
     let private confApp baseUri (app: IApplicationBuilder) =
