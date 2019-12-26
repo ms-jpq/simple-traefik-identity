@@ -11,9 +11,11 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Authorization
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Primitives
+open Microsoft.IdentityModel.Tokens
 open System
 open System.IO
 open System.Collections.Generic
+open System.IdentityModel.Tokens.Jwt
 
 
 [<Route("")>]
@@ -21,6 +23,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     inherit Controller()
 
     let cOpts = deps.Boxed.cookie
+    let jOpts = deps.Boxed.jwt
 
     let read (req: HttpRequest) =
         async {
@@ -48,9 +51,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy.HttpOnly <- true
         policy.SameSite <- SameSiteMode.Strict
         policy.Secure <- cOpts.secure
-        policy.MaxAge <- Nullable cOpts.maxAge
+        policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Domain <- cOpts.domain |> Option.defaultValue domain
         policy
+
 
     let checkAuth cookies =
         let auth = Map.tryFind cOpts.name cookies
@@ -66,9 +70,21 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let authorize domain path (resp: HttpResponse) =
         let policy = cookiePolicy domain
-        let authContent = ""
+        let now = DateTime.UtcNow
 
-        resp.Cookies.Append(cOpts.name, authContent, policy)
+        let cred =
+            let cred = 12
+            cred
+
+        let desc =
+            let desc = SecurityTokenDescriptor()
+            desc.Issuer <- jOpts.issuer
+            desc.IssuedAt <- now |> Nullable
+            desc.Expires <- now + jOpts.lifespan |> Nullable
+            desc
+
+        let token = JwtSecurityTokenHandler().CreateEncodedJwt(desc)
+        resp.Cookies.Append(cOpts.name, token, policy)
 
     let deauthorize domain path (resp: HttpResponse) =
         let policy = cookiePolicy domain

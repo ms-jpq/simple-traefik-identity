@@ -17,6 +17,10 @@ module Env =
           secure: bool
           maxAge: TimeSpan }
 
+    type JWTopts =
+        { issuer: string
+          lifespan: TimeSpan }
+
     type Domains =
         | Named of string seq
         | All
@@ -35,6 +39,7 @@ module Env =
           port: int
           model: AuthModel
           cookie: CookieOpts
+          jwt: JWTopts
           title: string
           background: string }
 
@@ -87,6 +92,10 @@ module Env =
           domain = pDomain find
           secure = pInsecure find
           maxAge = COOKIEMAXAGE }
+
+    let private pJWT find =
+        { issuer = TOKENISSUER
+          lifespan = TOKENLIFESPAN }
 
     let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
 
@@ -223,5 +232,6 @@ module Env =
           port = pPort find
           model = config find
           cookie = pCookie find
+          jwt = pJWT find
           title = pTitle find
           background = pBackground find }

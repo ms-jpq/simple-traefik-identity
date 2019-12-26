@@ -30,6 +30,10 @@ https://ms-jpq.github.io/simple-traefik-identity/
 
     let DEFAULTTITLE = "Simple Traefik Identity"
 
-    let COOKIENAME = "_sti_auth"
+    let COOKIENAME = "_sti_jwt"
 
-    let COOKIEMAXAGE = TimeSpan.FromHours(24.0)
+    let COOKIEMAXAGE = TimeSpan.FromDays(4200.0)
+
+    let TOKENISSUER = "STI"
+
+    let TOKENLIFESPAN = TimeSpan.FromHours(24.0)
