@@ -6,17 +6,17 @@ open STI.Consts
 open STI.Views.Login
 open DomainAgnostic
 open DomainAgnostic.Globals
+open DomainAgnostic.Reflection
+open DotNetExtensions
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
-open Microsoft.AspNetCore.Authorization
 open Microsoft.Extensions.Logging
-open Microsoft.Extensions.Primitives
 open Microsoft.IdentityModel.Tokens
 open System
 open System.IO
 open System.Text
-open System.Collections.Generic
 open System.IdentityModel.Tokens.Jwt
+
 
 
 [<Route("")>]
@@ -31,27 +31,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         let key = SymmetricSecurityKey(bytes)
         let algo = SecurityAlgorithms.HmacSha256Signature
         SigningCredentials(key, algo)
-
-
-    let read (req: HttpRequest) =
-        async {
-            use stream = new StreamReader(req.Body)
-
-            let headers =
-                req.Headers
-                |> Seq.cast<KeyValuePair<string, StringValues>>
-                |> Seq.map (fun x -> x.Key, x.Value)
-                |> Map.ofSeq
-
-            let cookies =
-                req.Cookies
-                |> Seq.cast<KeyValuePair<string, string>>
-                |> Seq.map (fun x -> x.Key, x.Value)
-                |> Map.ofSeq
-
-            let! body = stream.ReadToEndAsync() |> Async.AwaitTask
-            return headers, cookies, body
-        }
 
 
     let cookiePolicy domain =
@@ -128,7 +107,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     [<Route("")>]
     member self.Index() =
         async {
-            let! headers, cookies, body = read self.HttpContext.Request
+            let headers, cookies = Exts.metadata self.HttpContext.Request
             let domain, path = fdAuth headers
             let authStat = checkAuth cookies
 
