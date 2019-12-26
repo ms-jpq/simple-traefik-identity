@@ -5,13 +5,17 @@ open DomainAgnostic
 open System
 open Consts
 
-module State =
 
-    type Group =
-        { name: string
-          domains: Uri seq }
+module State =
 
     type User =
         { name: string
-          password: string
-          groups: Group seq }
+          password: string }
+
+    type Domain =
+        { name: string
+          users: User Set }
+
+    type AuthModel =
+        { secret: string
+          domains: Domain Set }

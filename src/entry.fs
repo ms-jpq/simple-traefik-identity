@@ -2,7 +2,6 @@
 
 open DomainAgnostic
 open Consts
-open STI.State
 open STI.Env
 open DomainAgnostic.Globals
 open Microsoft.Extensions.Hosting

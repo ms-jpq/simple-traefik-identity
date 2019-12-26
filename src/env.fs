@@ -6,6 +6,7 @@ open Microsoft.Extensions.Logging
 open Microsoft.AspNetCore.Http
 open System
 open Consts
+open State
 
 module Env =
 
@@ -17,7 +18,18 @@ module Env =
           background: string }
 
 
+    type RawGroup =
+        { name: string
+          domains: string seq }
+
+    type RawUser =
+        { name: string
+          password: string
+          groups: string seq }
+
+
     let private prefix = sprintf "%s_%s" ENVPREFIX
+
 
     let private required name =
         let err =
@@ -29,6 +41,7 @@ module Env =
         find (prefix "LOG_LEVEL")
         |> Option.bind Parse.Enum<LogLevel>
         |> Option.Recover LogLevel.Warning
+
 
     let private pPort find =
         find (prefix "PORT")
@@ -47,6 +60,8 @@ module Env =
 
 
     let private pTitle find = find (prefix "TITLE") |> Option.Recover DEFAULTTITLE
+
+    let private pSecret find = find (prefix "SECRET")
 
 
     let Opts() =
