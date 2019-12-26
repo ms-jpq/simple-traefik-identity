@@ -1,12 +1,14 @@
 namespace STI.Controllers
 
+open STI
 open STI.Env
 open STI.Consts
-open STI.State
 open STI.Views.Login
 open DomainAgnostic
+open DomainAgnostic.Globals
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Authorization
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Primitives
 open System
@@ -15,7 +17,7 @@ open System.Collections.Generic
 
 
 [<Route("")>]
-type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
+type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
     let cOpts = deps.Boxed.cookie

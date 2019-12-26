@@ -20,9 +20,9 @@ module Server =
         logging.AddConsole() |> ignore
 
 
-    let private confServices deps (services: IServiceCollection) =
+    let private confServices deps (globals: GlobalVar<'D>) (services: IServiceCollection) =
         services.AddSingleton(Container deps) |> ignore
-        services.AddControllers() |> ignore
+        services.AddSingleton(globals) |> ignore
 
 
     let private confApp baseUri (app: IApplicationBuilder) =
@@ -34,17 +34,17 @@ module Server =
         app.UseEndpoints(fun ep -> ep.MapControllers() |> ignore) |> ignore
 
 
-    let private confWebhost deps (webhost: IWebHostBuilder) =
+    let private confWebhost deps gloabls (webhost: IWebHostBuilder) =
         webhost.UseWebRoot(RESOURCESDIR) |> ignore
         webhost.UseKestrel() |> ignore
         webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.port) |> ignore
-        webhost.ConfigureServices(confServices deps) |> ignore
+        webhost.ConfigureServices(confServices deps gloabls) |> ignore
         webhost.Configure(Action<IApplicationBuilder>(confApp (PathString "/"))) |> ignore
 
 
-    let Build<'D>(deps: Variables) =
+    let Build<'D> (deps: Variables) (globals: GlobalVar<'D>) =
         let host = Host.CreateDefaultBuilder()
         host.UseContentRoot(CONTENTROOT) |> ignore
         host.ConfigureLogging(confLogging deps.logLevel) |> ignore
-        host.ConfigureWebHostDefaults(Action<IWebHostBuilder>(confWebhost deps)) |> ignore
+        host.ConfigureWebHostDefaults(Action<IWebHostBuilder>(confWebhost deps globals)) |> ignore
         host.Build()

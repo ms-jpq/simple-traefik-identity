@@ -15,8 +15,8 @@
   </ImportGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/consts.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/env.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />

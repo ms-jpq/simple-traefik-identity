@@ -3,13 +3,32 @@ namespace STI
 
 open DomainAgnostic
 open Microsoft.Extensions.Logging
+open System
 open System.IO
 open Consts
-open State
 open Legivel.Serialization
 
 
 module Env =
+
+    type CookieOpts =
+        { name: string
+          domain: string option
+          secure: bool
+          maxAge: TimeSpan }
+
+    type Domains =
+        | Named of string seq
+        | All
+
+    type User =
+        { name: string
+          password: string
+          domains: Domains }
+
+    type AuthModel =
+        { secret: string
+          users: User seq }
 
     type Variables =
         { logLevel: LogLevel
@@ -61,8 +80,7 @@ module Env =
         |> Option.defaultValue false
         |> not
 
-    let private pDomain find =
-        find (prefix "DOMAIN")
+    let private pDomain find = find (prefix "DOMAIN")
 
     let private pCookie find =
         { name = COOKIENAME

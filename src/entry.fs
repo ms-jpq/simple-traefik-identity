@@ -13,7 +13,8 @@ module Entry =
         echo README
 
         let deps = Opts()
+        use state = new GlobalVar<State>({ rejected = Seq.empty })
 
-        use server = Server.Build deps
+        use server = Server.Build deps state
         server.Run()
         0
