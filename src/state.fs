@@ -8,14 +8,15 @@ open Consts
 
 module State =
 
+    type Domains =
+        | Named of string seq
+        | All
+
     type User =
         { name: string
-          password: string }
-
-    type Domain =
-        { name: string
-          users: User Set }
+          password: string
+          domains: Domains }
 
     type AuthModel =
         { secret: string
-          domains: Domain Set }
+          users: User seq }

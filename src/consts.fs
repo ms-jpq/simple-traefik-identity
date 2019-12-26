@@ -9,6 +9,8 @@ module Consts =
 
     let CONTENTROOT = Directory.GetCurrentDirectory()
 
+    let CONFFILE = CONTENTROOT + "/config/conf.yml"
+
     let RESOURCESDIR = CONTENTROOT + "/views/"
 
     let ENVPREFIX = "STI"
