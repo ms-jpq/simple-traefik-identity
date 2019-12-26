@@ -16,16 +16,13 @@ module Consts =
     let private readme =
         sprintf """
 Simple Traefik Identity (STI)
-DESC
+STI is a Single Sign-On service for Traefik
 ==============================================================================
-RULES:
-DESC DESC DSEC
-==============================================================================
+For usage, please reference
 https://ms-jpq.github.io/simple-traefik-identity/
 """
 
-
-    let README = ""
+    let README = readme
 
     let WEBSRVPORT = 5050
 
