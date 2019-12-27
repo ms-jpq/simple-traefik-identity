@@ -22,7 +22,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)/pages/layout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/logout.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/pages/deny.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/pages/unauthorized.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/controllers/entry.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/server.fs" />
   </ItemGroup>

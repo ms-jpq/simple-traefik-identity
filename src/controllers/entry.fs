@@ -24,16 +24,16 @@ module Ingress =
     type AuthState =
         | Unauthenticated = 401
         | Unauthorized = 403
-        | Authorized = 200
+        | Authorized = 203
 
     type JwtClaim =
         { access: Domains }
 
         static member Serialize claim =
             match claim.access with
-            | All -> [ "access", "*" ] |> Map.ofSeq
+            | All -> [ "access", "*" :> obj ] |> Map.ofSeq
             | Named lst ->
-                let access = String.Join(",", lst |> Seq.toArray)
+                let access = String.Join(",", lst |> Seq.toArray) :> obj
                 [ "access", access ] |> Map.ofSeq
 
         static member DeSerialize claim =
@@ -89,7 +89,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             |> Some
         with _ -> None
 
-    let newJTW claims =
+    let newJWT claims =
         let now = DateTime.UtcNow
 
         let desc =
@@ -105,12 +105,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             desc
 
         JwtSecurityTokenHandler().CreateEncodedJwt(desc)
-
-    let authorize domain path (resp: HttpResponse) =
-        let policy = cookiePolicy domain
-
-        let token = newJTW Map.empty
-        resp.Cookies.Append(cOpts.name, token, policy)
 
 
     let checkAuth domain cookies =
@@ -162,7 +156,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 match auth with
                 | AuthState.Authorized -> ""
                 | AuthState.Unauthorized -> ""
-                | _ -> ""
+                | _ -> "123"
 
             resp.StatusCode <- LanguagePrimitives.EnumToValue auth
             return self.Content(html, "text/html") :> ActionResult
@@ -171,22 +165,35 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     [<HttpPost("/login")>]
-    member self.Login(username: string, password: string) =
+    member self.Login(username: string, password: string, goto: string) =
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let headers, cookies = Exts.Metadata req
             let domain, path = fdAuth headers
-            let user = authModel.users |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+            let policy = cookiePolicy domain
 
-            match user with
-            | Some u -> ()
-            | None -> ()
+            let token =
+                authModel.users
+                |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+                |> Option.map (fun u -> { access = u.domains })
+                |> Option.map JwtClaim.Serialize
+                |> Option.map newJWT
 
-
-            return self.Content("", "text/html") :> ActionResult
+            match token with
+            | Some t ->
+                let headers = [ "Location", goto ]
+                resp.Cookies.Append(cOpts.name, t, policy)
+                resp.StatusCode <- 302
+                Exts.AddHeaders headers resp
+                return self.Content("", "text/html") :> ActionResult
+            | None ->
+                let html = ""
+                resp.StatusCode <- LanguagePrimitives.EnumToValue AuthState.Unauthenticated
+                return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
+
 
     [<HttpPost("/logout")>]
     member self.Logout() =
