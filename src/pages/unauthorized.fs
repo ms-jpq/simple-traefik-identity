@@ -7,6 +7,9 @@ open Layout
 
 module Unauthorized =
 
+    let private denied = div [] [ h1 [] [ str "🚫" ] ]
 
-    let Render background tit fff =
-        ""
+
+    let Render background tit =
+        let nodes = Layout background tit "" "" [ denied ]
+        nodes |> renderHtmlDocument

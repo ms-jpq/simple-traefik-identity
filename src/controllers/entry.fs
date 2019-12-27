@@ -3,7 +3,7 @@ namespace STI.Controllers
 open STI
 open STI.Env
 open STI.Consts
-open STI.Views.Login
+open STI.Views
 open DomainAgnostic
 open DomainAgnostic.Globals
 open DomainAgnostic.Reflection
@@ -61,6 +61,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
+    let renderReq = deps.Boxed.background, deps.Boxed.title
 
 
     let cookiePolicy domain =
@@ -155,8 +156,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let html =
                 match auth with
                 | AuthState.Authorized -> ""
-                | AuthState.Unauthorized -> ""
-                | _ -> "123"
+                | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render
+                | _ -> renderReq ||> Login.Render
 
             resp.StatusCode <- LanguagePrimitives.EnumToValue auth
             return self.Content(html, "text/html") :> ActionResult
@@ -188,7 +189,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 Exts.AddHeaders headers resp
                 return self.Content("", "text/html") :> ActionResult
             | None ->
-                let html = ""
+                let html = renderReq ||> Login.Render
                 resp.StatusCode <- LanguagePrimitives.EnumToValue AuthState.Unauthenticated
                 return self.Content(html, "text/html") :> ActionResult
         }
@@ -204,9 +205,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let domain, path = fdAuth headers
             let policy = cookiePolicy domain
             let headers = [ "Refresh", "0" ]
+            let html = renderReq ||> Login.Render
 
             Exts.AddHeaders headers resp
             resp.Cookies.Delete(cOpts.name, policy)
-            return self.Content("", "text/html") :> ActionResult
+            return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask

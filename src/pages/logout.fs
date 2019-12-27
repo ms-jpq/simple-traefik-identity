@@ -7,5 +7,14 @@ open Layout
 
 module Logout =
 
-    let Render background tit fff =
-        ""
+    let private logout =
+        form
+            [ _action "/logout"
+              _method "post" ]
+            [ h1 [] [ str "Hasta la vista, baby" ]
+              input [ _type "submit" ] ]
+
+
+    let Render background tit =
+        let nodes = Layout background tit "" "" [ logout ]
+        nodes |> renderHtmlDocument
