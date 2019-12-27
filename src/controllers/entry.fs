@@ -11,6 +11,7 @@ open DotNetExtensions
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Primitives
 open Microsoft.IdentityModel.Tokens
 open System
 open System.IO
@@ -59,6 +60,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
+    let authModel = deps.Boxed.model
 
 
     let cookiePolicy domain =
@@ -71,7 +73,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy
 
     let credentials =
-        let bytes = deps.Boxed.model.secret |> Encoding.UTF8.GetBytes
+        let bytes = authModel.secret |> Encoding.UTF8.GetBytes
         let key = SymmetricSecurityKey(bytes)
         let algo = SecurityAlgorithms.HmacSha256Signature
         SigningCredentials(key, algo)
@@ -109,10 +111,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
         let token = newJTW Map.empty
         resp.Cookies.Append(cOpts.name, token, policy)
-
-    let deauthorize domain path (resp: HttpResponse) =
-        let policy = cookiePolicy domain
-        resp.Cookies.Delete(cOpts.name, policy)
 
 
     let checkAuth domain cookies =
@@ -156,28 +154,52 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let headers, cookies = Exts.metadata req
+            let headers, cookies = Exts.Metadata req
             let domain, path = fdAuth headers
             let auth = checkAuth domain cookies
 
+            let html =
+                match auth with
+                | AuthState.Authorized -> ""
+                | AuthState.Unauthorized -> ""
+                | _ -> ""
 
             resp.StatusCode <- LanguagePrimitives.EnumToValue auth
-            return self.Content("", "text/html") :> ActionResult
+            return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
-    member self.Auth(username: string, password: string) =
+    [<HttpPost("/login")>]
+    member self.Login(username: string, password: string) =
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let headers, cookies = Exts.metadata req
+            let headers, cookies = Exts.Metadata req
             let domain, path = fdAuth headers
-            let auth = checkAuth domain cookies
+            let user = authModel.users |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+
+            match user with
+            | Some u -> ()
+            | None -> ()
 
 
-            resp.StatusCode <- LanguagePrimitives.EnumToValue auth
+            return self.Content("", "text/html") :> ActionResult
+        }
+        |> Async.StartAsTask
+
+    [<HttpPost("/logout")>]
+    member self.Logout() =
+        async {
+            let req = self.HttpContext.Request
+            let resp = self.HttpContext.Response
+            let headers, cookies = Exts.Metadata req
+            let domain, path = fdAuth headers
+            let policy = cookiePolicy domain
+            let headers = [ "Refresh", "0" ]
+
+            Exts.AddHeaders headers resp
+            resp.Cookies.Delete(cOpts.name, policy)
             return self.Content("", "text/html") :> ActionResult
         }
         |> Async.StartAsTask
