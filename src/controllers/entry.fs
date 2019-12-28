@@ -158,6 +158,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let! claims = cookies
                           |> Map.tryFind cOpts.name
                           |> Option.bind validateJWT
+            echo claims
             let! model = JwtClaim.DeSerialize claims
             let auth =
                 match model.access with
@@ -220,13 +221,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             | Some t ->
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
-                logger.LogInformation info
+                logger.LogWarning info
                 let policy = cookiePolicy headers.host
                 resp.Cookies.Append(cOpts.name, t, policy)
                 resp.StatusCode <- TEAPOT
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
-                let info = sprintf "Authentication attempt failed -- %A" uri
+                let info = sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
                 logger.LogWarning info
                 return {| ok = false |} |> JsonResult :> ActionResult
         }
