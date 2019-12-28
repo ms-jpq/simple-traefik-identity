@@ -224,8 +224,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> LoginHeaders.Decode
                 |> Option.bind ((<||) login)
                 |> Option.map (fun u -> { access = u.domains })
-                |> Option.map JwtClaim.Serialize
-                |> Option.map newJWT
+                |> Option.map (JwtClaim.Serialize >> newJWT)
 
             match token with
             | Some t ->
