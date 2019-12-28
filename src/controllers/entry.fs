@@ -23,7 +23,7 @@ module Ingress =
     let TEAPOT = 418
 
     type AuthState =
-        | Unauthenticated = 401
+        | Unauthenticated = 407
         | Unauthorized = 403
         | Authorized = 203
 
@@ -78,7 +78,7 @@ module Ingress =
 
     [<CLIMutable>]
     type LoginHeaders =
-        { [<FromHeader(Name = "STI-Authorization")>]
+        { [<FromHeader(Name = "Proxy-Authorization")>]
           authorization: string }
 
         static member Decode headers =
@@ -183,24 +183,26 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     [<HttpGet("")>]
     member self.Index(headers: ForwardedHeaders) =
         async {
+            let resp = self.HttpContext.Response
             let _, cookies = Exts.Metadata self.HttpContext.Request
             let authState = checkAuth headers.host cookies
 
-            let html =
+            let html, respHeaders =
                 match authState with
-                | AuthState.Authorized -> ""
-                | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render
+                | AuthState.Authorized -> "", Seq.empty
+                | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render, Seq.empty
                 | AuthState.Unauthenticated
-                | _ -> renderReq ||> Login.Render
+                | _ -> renderReq ||> Login.Render, Seq.empty
 
-            self.HttpContext.Response.StatusCode <- authState |> LanguagePrimitives.EnumToValue
+            Exts.AddHeaders respHeaders resp
+            resp.StatusCode <- authState |> LanguagePrimitives.EnumToValue
             return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
 
     [<HttpGet("")>]
-    [<HttpHeader("STI-Authorization")>]
+    [<HttpHeader("Proxy-Authorization")>]
     member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
             let resp = self.HttpContext.Response
@@ -225,7 +227,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     [<HttpGet("")>]
-    [<HttpHeader("STI-Deauthorization")>]
+    [<HttpHeader("Proxy-Deauthorization")>]
     member self.Logout(headers: ForwardedHeaders) =
         async {
             let resp = self.HttpContext.Response
