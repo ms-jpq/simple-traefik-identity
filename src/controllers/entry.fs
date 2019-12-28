@@ -10,6 +10,7 @@ open DotNetExtensions
 open DotNetExtensions.Routing
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Http.Extensions
 open Microsoft.Extensions.Logging
 open System
 open System.Text
@@ -17,30 +18,6 @@ open System.IdentityModel.Tokens.Jwt
 
 
 module Ingress =
-
-
-    [<CLIMutable>]
-    type ForwardedHeaders =
-        { [<FromHeader(Name = "X-Forwarded-For")>]
-          origin: string
-          [<FromHeader(Name = "X-Forwarded-Host")>]
-          host: string
-          [<FromHeader(Name = "X-Forwarded-Method")>]
-          method: string
-          [<FromHeader(Name = "X-Forwarded-Port")>]
-          port: int
-          [<FromHeader(Name = "X-Forwarded-Proto")>]
-          scheme: string
-          [<FromHeader(Name = "X-Forwarded-Server")>]
-          proxy: string
-          [<FromHeader(Name = "X-Forwarded-Uri")>]
-          path: string
-          [<FromHeader(Name = "X-Real-Ip")>]
-          originIP: string }
-
-        static member OriginalUri headers =
-            sprintf "%s://%s:%d/%s" headers.scheme headers.host headers.port headers.path |> Uri
-
 
     [<CLIMutable>]
     type LoginHeaders =
@@ -76,8 +53,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
     let renderReq = deps.Boxed.background, deps.Boxed.title
-    let jwt = JwtSecurityTokenHandler()
-
 
     let cookiePolicy (domain: string) =
         let d =
@@ -97,12 +72,15 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     [<HttpGet("")>]
-    member self.Index(headers: ForwardedHeaders) =
+    member self.Index() =
         async {
+            let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let uri = headers |> ForwardedHeaders.OriginalUri
             let _, cookies = Exts.Metadata self.HttpContext.Request
-            let authState = checkAuth jOpts cOpts headers.host cookies
+            let host = req.Host |> ToString
+            let authState = checkAuth jOpts cOpts host cookies
+
+            let uri = req.GetDisplayUrl() |> ToString
             let info = sprintf "%A - %A" uri authState
 
             let html, respHeaders =
@@ -127,10 +105,11 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     [<HttpGet("")>]
     [<HttpHeader("STI-Authorization")>]
-    member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
+    member self.Login(credentials: LoginHeaders) =
         async {
+            let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let uri = headers |> ForwardedHeaders.OriginalUri
+            let uri = req.GetDisplayUrl() |> ToString
 
             let token =
                 credentials
@@ -145,7 +124,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
                 logger.LogWarning info
-                let policy = cookiePolicy headers.host
+                let policy =
+                    req.Host
+                    |> ToString
+                    |> cookiePolicy
                 resp.Cookies.Append(cOpts.name, tkn, policy)
                 resp.StatusCode <- teapot
                 return {| ok = true |} |> JsonResult :> ActionResult
@@ -160,15 +142,20 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     [<HttpGet("")>]
     [<HttpHeader("STI-Deauthorization")>]
-    member self.Logout(headers: ForwardedHeaders) =
+    member self.Logout() =
         async {
-            let uri = headers |> ForwardedHeaders.OriginalUri
+            let req = self.HttpContext.Request
+            let uri = req.GetDisplayUrl() |> ToString
 
             let info =
                 sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
 
             let resp = self.HttpContext.Response
-            let policy = cookiePolicy headers.host
+
+            let policy =
+                req.Host
+                |> ToString
+                |> cookiePolicy
             resp.Cookies.Delete(cOpts.name, policy)
             resp.StatusCode <- teapot
             logger.LogWarning info
