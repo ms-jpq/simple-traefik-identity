@@ -15,7 +15,7 @@ module Env =
 
     type CookieOpts =
         { name: string
-          domain: string option
+          domains: string seq
           secure: bool
           maxAge: TimeSpan }
 
@@ -58,7 +58,10 @@ module Env =
         static member Identity a b = a.name = b.name
 
     type ConfYaml =
-        { secret: string option
+        { log_level: bool option
+          insecure: bool option
+          secret: string option
+          domains: string list option
           groups: RawGroup list option
           users: RawUser list option }
 
@@ -88,11 +91,16 @@ module Env =
         |> Option.defaultValue false
         |> not
 
-    let private pDomain find = find (prefix "DOMAIN")
+    let private pDomain find =
+        find (prefix "DOMAIN")
+        |> Option.map (fun (d: string) -> d.Split(";"))
+        |> Option.map Seq.ofArray
+        |> Option.defaultValue Seq.empty
+
 
     let private pCookie find =
         { name = COOKIENAME
-          domain = pDomain find
+          domains = pDomain find
           secure = pInsecure find
           maxAge = COOKIEMAXAGE }
 

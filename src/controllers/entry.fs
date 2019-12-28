@@ -2,7 +2,6 @@ namespace STI.Controllers
 
 open STI
 open STI.Env
-open STI.Consts
 open STI.Views
 open DomainAgnostic
 open DomainAgnostic.Globals
@@ -13,7 +12,6 @@ open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
 open Microsoft.IdentityModel.Tokens
 open System
-open System.IO
 open System.Text
 open System.IdentityModel.Tokens.Jwt
 
@@ -112,13 +110,19 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let jwt = JwtSecurityTokenHandler()
 
 
-    let cookiePolicy domain =
+    let cookiePolicy (domain: string) =
+        let d =
+            cOpts.domains
+            |> Seq.tryFind (fun d -> d.Contains(domain))
+            |> Option.defaultValue domain
+
         let policy = CookieOptions()
         policy.HttpOnly <- true
-        policy.SameSite <- SameSiteMode.Strict
+        policy.SameSite <- SameSiteMode.Lax
         policy.Secure <- cOpts.secure
         policy.MaxAge <- cOpts.maxAge |> Nullable
-        policy.Domain <- cOpts.domain |> Option.defaultValue domain
+        policy.Domain <- d
+        policy.Path <- null
         policy
 
     let credentials =
@@ -183,7 +187,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                         | false -> AuthState.Unauthorized
                 return auth
             }
-
         state |> Option.defaultValue AuthState.Unauthenticated
 
 
@@ -236,12 +239,12 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> Option.map (JwtClaim.Serialize >> newJWT)
 
             match token with
-            | Some t ->
+            | Some tkn ->
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
                 logger.LogWarning info
                 let policy = cookiePolicy headers.host
-                resp.Cookies.Append(cOpts.name, t, policy)
+                resp.Cookies.Append(cOpts.name, tkn, policy)
                 resp.StatusCode <- TEAPOT
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
