@@ -132,11 +132,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             desc.IssuerSigningKey <- credentials.Key
             desc.ValidIssuer <- jOpts.issuer
             desc.ValidAudience <- jOpts.audience
+            desc.ValidateAudience <- false
             desc
         try
-            let stoken = ref null
-            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, stoken)
-            echo stoken
+            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, ref null)
             principal.Claims
             |> Seq.map (fun c -> c.Type, c.Value)
             |> Map.ofSeq
@@ -152,8 +151,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let desc = SecurityTokenDescriptor()
             desc.SigningCredentials <- credentials
             desc.Issuer <- jOpts.issuer
-            desc.IssuedAt <- now |> Nullable
             desc.Audience <- jOpts.audience
+            desc.IssuedAt <- now |> Nullable
             desc.Expires <- now + jOpts.lifespan |> Nullable
             desc.Claims <-
                 claims
