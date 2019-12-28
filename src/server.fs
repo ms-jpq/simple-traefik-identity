@@ -2,15 +2,19 @@ namespace STI
 
 open DomainAgnostic
 open DomainAgnostic.Globals
+open Microsoft.AspNetCore.CookiePolicy
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
+open Microsoft.Extensions.Hosting
 open System
 open STI.Env
 open STI.Consts
-open Microsoft.Extensions.Hosting
+open STI.Middlewares.Preauth
+open STI.Middlewares.Rewrite
+
 
 [<RequireQualifiedAccess>]
 module Server =
@@ -21,21 +25,34 @@ module Server =
 
 
     let private confServices deps (globals: GlobalVar<'D>) (services: IServiceCollection) =
-        services.AddSingleton(Container deps) |> ignore
-        services.AddSingleton(globals) |> ignore
+        services.AddSingleton(Container deps).AddSingleton(globals) |> ignore
         services.AddControllers() |> ignore
 
+    let private confCookies =
+        let options = CookiePolicyOptions()
+        options.HttpOnly <- HttpOnlyPolicy.Always
+        options.MinimumSameSitePolicy <- SameSiteMode.Lax
+        options.Secure <- CookieSecurePolicy.SameAsRequest
+        options
+
+    let private confForward =
+        let options = ForwardedHeadersOptions()
+        options
 
     let private confApp baseUri (app: IApplicationBuilder) =
         app.UseStatusCodePages().UseDeveloperExceptionPage() |> ignore
+        app.UseMiddleware<PreauthMiddleware>() |> ignore
+        app.UseForwardedHeaders(confForward) |> ignore
+        app.UseMiddleware<RewriteMiddleware>() |> ignore
         app.UsePathBase(baseUri) |> ignore
         app.UseStaticFiles() |> ignore
+        app.UseCookiePolicy(confCookies) |> ignore
         app.UseRouting() |> ignore
         app.UseCors() |> ignore
         app.UseEndpoints(fun ep -> ep.MapControllers() |> ignore) |> ignore
 
 
-    let private confWebhost deps gloabls (webhost: IWebHostBuilder) =
+    let private confWebhost (deps: Variables) gloabls (webhost: IWebHostBuilder) =
         webhost.UseWebRoot(RESOURCESDIR) |> ignore
         webhost.UseKestrel() |> ignore
         webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.port) |> ignore

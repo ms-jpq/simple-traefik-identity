@@ -2,6 +2,7 @@ namespace STI.Controllers
 
 open STI
 open STI.Env
+open STI.Auth
 open STI.Views
 open DomainAgnostic
 open DomainAgnostic.Globals
@@ -10,45 +11,12 @@ open DotNetExtensions.Routing
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
-open Microsoft.IdentityModel.Tokens
 open System
 open System.Text
 open System.IdentityModel.Tokens.Jwt
 
 
 module Ingress =
-
-    let TEAPOT = 418
-
-    type AuthState =
-        | Unauthenticated = 407
-        | Unauthorized = 403
-        | Authorized = 203
-
-    type JwtClaim =
-        { access: Domains }
-
-        static member Serialize claim =
-            match claim.access with
-            | All -> [ "access", "*" ] |> Map.ofSeq
-            | Named lst ->
-                let access = String.Join(",", lst |> Seq.toArray)
-                [ "access", access ] |> Map.ofSeq
-
-        static member DeSerialize claim =
-            maybe {
-                let! access = claim |> Map.tryFind "access"
-                let! res = match CAST<string> access with
-                           | Some "*" -> Some { access = All }
-                           | Some c ->
-                               let a =
-                                   c.Split(",")
-                                   |> Seq.ofArray
-                                   |> Named
-                               Some { access = a }
-                           | None -> None
-                return res
-            }
 
 
     [<CLIMutable>]
@@ -103,6 +71,7 @@ open Ingress
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
+    let TEAPOT = 418
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
@@ -117,78 +86,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             |> Option.defaultValue domain
 
         let policy = CookieOptions()
-        policy.HttpOnly <- true
-        policy.SameSite <- SameSiteMode.Lax
-        policy.Secure <- cOpts.secure
         policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Domain <- d
         policy.Path <- null
         policy
-
-    let credentials =
-        let key = authModel.secret |> SymmetricSecurityKey
-        let algo = SecurityAlgorithms.HmacSha256Signature
-        SigningCredentials(key, algo)
-
-
-    let validateJWT (token: string) =
-        let validation =
-            let desc = TokenValidationParameters()
-            desc.IssuerSigningKey <- credentials.Key
-            desc.ValidIssuer <- jOpts.issuer
-            desc.ValidAudience <- jOpts.audience
-            desc.ValidateAudience <- false
-            desc
-        try
-            jwt.ValidateToken(token, validation, ref null) |> ignore
-            jwt.ReadJwtToken(token).Payload
-            |> Map.OfKVP
-            |> Some
-        with e ->
-            logger.LogError(e, "")
-            None
-
-    let newJWT claims =
-        let now = DateTime.UtcNow
-
-        let desc =
-            let desc = SecurityTokenDescriptor()
-            desc.SigningCredentials <- credentials
-            desc.Issuer <- jOpts.issuer
-            desc.Audience <- jOpts.audience
-            desc.IssuedAt <- now |> Nullable
-            desc.Expires <- now + jOpts.lifespan |> Nullable
-            desc
-
-        let token = jwt.CreateJwtSecurityToken(desc)
-        claims
-        |> Map.toSeq
-        |> Seq.iter token.Payload.Add
-        jwt.WriteToken token
-
-    let checkAuth domain cookies =
-        let state =
-            maybe {
-                let! claims = cookies
-                              |> Map.tryFind cOpts.name
-                              |> Option.bind validateJWT
-
-                let! model = JwtClaim.DeSerialize claims
-                let auth =
-                    match model.access with
-                    | All -> AuthState.Authorized
-                    | Named lst ->
-                        let chk =
-                            lst
-                            |> Set
-                            |> flip Set.contains
-                        match chk domain with
-                        | true -> AuthState.Authorized
-                        | false -> AuthState.Unauthorized
-                return auth
-            }
-        state |> Option.defaultValue AuthState.Unauthenticated
-
 
     let login username password =
         let seek (u: User) = u.name = username && u.password = password
@@ -201,7 +102,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let resp = self.HttpContext.Response
             let uri = headers |> ForwardedHeaders.OriginalUri
             let _, cookies = Exts.Metadata self.HttpContext.Request
-            let authState = checkAuth headers.host cookies
+            let authState = checkAuth jOpts cOpts headers.host cookies
             let info = sprintf "%A - %A" uri authState
 
             let html, respHeaders =
@@ -236,7 +137,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> LoginHeaders.Decode
                 |> Option.bind ((<||) login)
                 |> Option.map (fun u -> { access = u.domains })
-                |> Option.map (JwtClaim.Serialize >> newJWT)
+                |> Option.map JwtClaim.Serialize
+                |> Option.map (newJWT jOpts)
 
             match token with
             | Some tkn ->

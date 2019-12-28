@@ -15,11 +15,11 @@ module Env =
 
     type CookieOpts =
         { name: string
-          secure: bool
           maxAge: TimeSpan }
 
     type JWTopts =
-        { issuer: string
+        { secret: byte array
+          issuer: string
           audience: string
           lifespan: TimeSpan }
 
@@ -33,8 +33,7 @@ module Env =
           domains: Domains }
 
     type AuthModel =
-        { secret: byte array
-          domains: string seq
+        { domains: string seq
           users: User seq }
 
     type Variables =
@@ -60,7 +59,6 @@ module Env =
     type ConfYaml =
         { loglevel: string option
           port: int option
-          secure: bool option
           secret: string option
           domains: string list option
           groups: RawGroup list option
@@ -81,7 +79,6 @@ module Env =
     let private pYaml conf =
         let def =
             { loglevel = None
-              secure = None
               port = None
               secret = None
               domains = None
@@ -118,11 +115,6 @@ module Env =
         |> Option.bind Parse.Int
         |> Option.Recover WEBSRVPORT
 
-    let private pSecure find =
-        find (prefix "SECURE")
-        |> Option.bind Parse.Bool
-        |> Option.defaultValue false
-        |> not
 
     let private pDomain find =
         find (prefix "DOMAIN")
@@ -240,19 +232,17 @@ module Env =
         | _ -> ()
 
         let model =
-            { secret = secret
-              domains = domains
+            { domains = domains
               users = users }
 
-        let secure = ymlConf.secure |> Option.defaultValue (pSecure find)
 
         let cookie =
             { name = COOKIENAME
-              secure = secure
               maxAge = COOKIEMAXAGE }
 
         let jwt =
-            { issuer = TOKENISSUER
+            { secret = secret
+              issuer = TOKENISSUER
               audience = TOKENAUDIENCE
               lifespan = TOKENLIFESPAN }
 
