@@ -112,7 +112,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let cookiePolicy (domain: string) =
         let d =
-            cOpts.domains
+            deps.Boxed.model.domains
             |> Seq.tryFind (fun d -> d.Contains(domain))
             |> Option.defaultValue domain
 

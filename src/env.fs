@@ -15,7 +15,6 @@ module Env =
 
     type CookieOpts =
         { name: string
-          domains: string seq
           secure: bool
           maxAge: TimeSpan }
 
@@ -35,6 +34,7 @@ module Env =
 
     type AuthModel =
         { secret: byte array
+          domains: string seq
           users: User seq }
 
     type Variables =
@@ -58,12 +58,16 @@ module Env =
         static member Identity a b = a.name = b.name
 
     type ConfYaml =
-        { log_level: bool option
-          insecure: bool option
+        { loglevel: string option
+          port: int option
+          secure: bool option
           secret: string option
           domains: string list option
           groups: RawGroup list option
-          users: RawUser list option }
+          users: RawUser list option
+          title: string option
+          background: string option }
+
 
     let private prefix = sprintf "%s_%s" ENVPREFIX
 
@@ -72,6 +76,35 @@ module Env =
         let err =
             sprintf "\n\n\n-- MISSING ENVIRONMENTAL VARIABLE :: [%s] --\n\n\n" (prefix name)
         err |> Option.ForceUnwrap
+
+
+    let private pYaml conf =
+        let def =
+            { loglevel = None
+              secure = None
+              port = None
+              secret = None
+              domains = None
+              groups = None
+              users = None
+              title = None
+              background = None }
+
+        let mapSucc res =
+            match res with
+            | Success s -> Some s.Data
+            | Error _ -> None
+
+        let parse yml =
+            yml
+            |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
+            |> Seq.choose mapSucc
+            |> Seq.tryHead
+
+        match File.Exists conf with
+        | false -> None
+        | true -> File.ReadAllText conf |> parse
+        |> Option.defaultValue def
 
 
     let private pLog find =
@@ -85,8 +118,8 @@ module Env =
         |> Option.bind Parse.Int
         |> Option.Recover WEBSRVPORT
 
-    let private pInsecure find =
-        find (prefix "INSECURE")
+    let private pSecure find =
+        find (prefix "SECURE")
         |> Option.bind Parse.Bool
         |> Option.defaultValue false
         |> not
@@ -98,55 +131,7 @@ module Env =
         |> Option.defaultValue Seq.empty
 
 
-    let private pCookie find =
-        { name = COOKIENAME
-          domains = pDomain find
-          secure = pInsecure find
-          maxAge = COOKIEMAXAGE }
-
-    let private pJWT find =
-        { issuer = TOKENISSUER
-          audience = TOKENAUDIENCE
-          lifespan = TOKENLIFESPAN }
-
-    let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
-
-    let private pTitle find = find (prefix "TITLE") |> Option.Recover DEFAULTTITLE
-
-
-    let private pYaml conf =
-
-        let mapSucc res =
-            match res with
-            | Success s -> Some s.Data
-            | Error _ -> None
-
-        let parse yml =
-            yml
-            |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
-            |> Seq.choose mapSucc
-            |> Seq.tryHead
-
-        let yaml =
-            match File.Exists conf with
-            | false -> None
-            | true -> File.ReadAllText conf |> parse
-
-        match yaml with
-        | None -> None, Seq.empty, Seq.empty
-        | Some y ->
-            let groups =
-                y.groups
-                |> Option.defaultValue []
-                |> Seq.ofList
-
-            let users =
-                y.users
-                |> Option.defaultValue []
-                |> Seq.ofList
-
-            y.secret, groups, users
-
+    let private pSecret find = find (prefix "SECRET")
 
     let private pGroup (group: string) =
         match group.Split(":") |> List.ofArray with
@@ -155,6 +140,14 @@ module Env =
               domains = domains.Split(",") |> List.ofArray }
             |> Some
         | _ -> None
+
+    let private pGroups find =
+        find (prefix "GROUPS")
+        |> Option.map (fun (g: string) -> g.Split(";"))
+        |> Option.defaultValue [||]
+        |> Seq.ofArray
+        |> Seq.choose pGroup
+
 
     let private pUser (user: string) =
         match user.Split(":") |> List.ofArray with
@@ -165,26 +158,19 @@ module Env =
             |> Some
         | _ -> None
 
-    let private pConf (find: string -> string option) =
-        let secret = find (prefix "SECRET")
+    let private pUsers find =
+        find (prefix "USERS")
+        |> Option.map (fun (u: string) -> u.Split(";"))
+        |> Option.defaultValue [||]
+        |> Seq.ofArray
+        |> Seq.choose pUser
 
-        let groups =
-            find (prefix "GROUPS")
-            |> Option.map (fun g -> g.Split(";"))
-            |> Option.defaultValue [||]
-            |> Seq.ofArray
-            |> Seq.choose pGroup
+    let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
 
-        let users =
-            find (prefix "USERS")
-            |> Option.map (fun u -> u.Split(";"))
-            |> Option.defaultValue [||]
-            |> Seq.ofArray
-            |> Seq.choose pUser
+    let private pTitle find = find (prefix "TITLE") |> Option.Recover DEFAULTTITLE
 
-        secret, groups, users
 
-    let private model secret (groups: RawGroup seq) (users: RawUser seq) =
+    let private pmodel (groups: RawGroup seq) (users: RawUser seq) =
         let pDomain acc curr =
             match (acc, curr) with
             | _, "*" -> All
@@ -207,48 +193,77 @@ module Env =
               password = user.password
               domains = domains }
 
-        { secret = secret
-          users = users |> Seq.map mkUser }
-
-
-    let private config find =
-        let yaml = find (prefix "CONF_FILE") |> Option.defaultValue CONFFILE
-        let s1, g1, u1 = pConf find
-        let s2, g2, u2 = pYaml yaml
-
-        let rg acc curr =
-            match acc |> Seq.tryFind (RawGroup.Identity curr) with
-            | Some _ -> acc
-            | None -> acc ++ [ curr ]
-
-        let ru acc curr =
-            match acc |> Seq.tryFind (RawUser.Identity curr) with
-            | Some _ -> acc
-            | None -> acc ++ [ curr ]
-
-        let ss =
-            match (s1, s2) with
-            | Some s1, _ -> s1
-            | _, Some s2 -> s2
-            | _ -> sprintf "Did not find |SECRET| in either ENVIRONMENT or %s" yaml |> failwith
-
-        let groups = Seq.fold rg Seq.empty (g1 ++ g2)
-        let users = Seq.fold ru Seq.empty (u1 ++ u2)
-
-        let secret = ss |> Encoding.UTF8.GetBytes
-        match secret.Length with
-        | x when x < 128 -> failwith "Secret not long enough!"
-        | _ -> ()
-
-        model secret groups users
+        users |> Seq.map mkUser
 
 
     let Opts() =
         let find = ENV() |> flip Map.tryFind
-        { logLevel = pLog find
-          port = pPort find
-          model = config find
-          cookie = pCookie find
-          jwt = pJWT find
-          title = pTitle find
-          background = pBackground find }
+        let yaml = find (prefix "CONF_FILE") |> Option.defaultValue CONFFILE
+        let ymlConf = pYaml yaml
+
+        let log =
+            ymlConf.loglevel
+            |> Option.bind Parse.Enum<LogLevel>
+            |> Option.defaultValue (pLog find)
+
+        let port = ymlConf.port |> Option.defaultValue (pPort find)
+
+        let g =
+            ymlConf.groups
+            |> Option.defaultValue []
+            |> Seq.ofList
+            |> (++) (pGroups find)
+
+        let u =
+            ymlConf.users
+            |> Option.defaultValue []
+            |> Seq.ofList
+            |> (++) (pUsers find)
+
+        let users = pmodel g u
+
+        let domains =
+            ymlConf.domains
+            |> Option.defaultValue []
+            |> Seq.ofList
+            |> (++) (pDomain find)
+
+        let secret =
+            match (ymlConf.secret, pSecret find) with
+            | Some s1, _ -> s1
+            | _, Some s2 -> s2
+            | _ -> sprintf "Did not find |SECRET| in either ENVIRONMENT or %s" yaml |> failwith
+            |> Encoding.UTF8.GetBytes
+
+        match secret.Length with
+        | x when x < 128 -> failwith "Secret not long enough!"
+        | _ -> ()
+
+        let model =
+            { secret = secret
+              domains = domains
+              users = users }
+
+        let secure = ymlConf.secure |> Option.defaultValue (pSecure find)
+
+        let cookie =
+            { name = COOKIENAME
+              secure = secure
+              maxAge = COOKIEMAXAGE }
+
+        let jwt =
+            { issuer = TOKENISSUER
+              audience = TOKENAUDIENCE
+              lifespan = TOKENLIFESPAN }
+
+        let title = ymlConf.title |> Option.defaultValue (pTitle find)
+
+        let background = ymlConf.background |> Option.defaultValue (pBackground find)
+
+        { logLevel = log
+          port = port
+          model = model
+          cookie = cookie
+          jwt = jwt
+          title = title
+          background = background }
