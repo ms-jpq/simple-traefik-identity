@@ -21,6 +21,7 @@ module Env =
 
     type JWTopts =
         { issuer: string
+          audience: string
           lifespan: TimeSpan }
 
     type Domains =
@@ -97,6 +98,7 @@ module Env =
 
     let private pJWT find =
         { issuer = TOKENISSUER
+          audience = TOKENAUDIENCE
           lifespan = TOKENLIFESPAN }
 
     let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")

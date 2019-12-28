@@ -36,4 +36,6 @@ https://ms-jpq.github.io/simple-traefik-identity/
 
     let TOKENISSUER = "STI"
 
+    let TOKENAUDIENCE = "STI"
+
     let TOKENLIFESPAN = TimeSpan.FromHours(24.0)

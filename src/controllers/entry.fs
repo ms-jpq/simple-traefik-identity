@@ -127,14 +127,23 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     let validateJWT (token: string) =
-        let validation = TokenValidationParameters()
+        let validation =
+            let desc = TokenValidationParameters()
+            desc.IssuerSigningKey <- credentials.Key
+            desc.ValidIssuer <- jOpts.issuer
+            desc.ValidAudience <- jOpts.audience
+            desc
         try
-            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, ref null)
+            let stoken = ref null
+            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, stoken)
+            echo stoken
             principal.Claims
             |> Seq.map (fun c -> c.Type, c.Value)
             |> Map.ofSeq
             |> Some
-        with _ -> None
+        with e ->
+            logger.LogError(e, "")
+            None
 
     let newJWT claims =
         let now = DateTime.UtcNow
@@ -144,6 +153,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             desc.SigningCredentials <- credentials
             desc.Issuer <- jOpts.issuer
             desc.IssuedAt <- now |> Nullable
+            desc.Audience <- jOpts.audience
             desc.Expires <- now + jOpts.lifespan |> Nullable
             desc.Claims <-
                 claims
@@ -158,7 +168,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let! claims = cookies
                           |> Map.tryFind cOpts.name
                           |> Option.bind validateJWT
-            echo claims
+
             let! model = JwtClaim.DeSerialize claims
             let auth =
                 match model.access with
@@ -227,7 +237,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 resp.StatusCode <- TEAPOT
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
-                let info = sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
+                let info =
+                    sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
                 logger.LogWarning info
                 return {| ok = false |} |> JsonResult :> ActionResult
         }
@@ -239,7 +250,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     member self.Logout(headers: ForwardedHeaders) =
         async {
             let uri = headers |> ForwardedHeaders.OriginalUri
-            let info = sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
+
+            let info =
+                sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
+
             let resp = self.HttpContext.Response
             let policy = cookiePolicy headers.host
             resp.Cookies.Delete(cOpts.name, policy)
