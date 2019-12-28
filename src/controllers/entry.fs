@@ -190,6 +190,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 match authState with
                 | AuthState.Authorized -> ""
                 | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render
+                | AuthState.Unauthenticated
                 | _ -> renderReq ||> Login.Render
 
             self.HttpContext.Response.StatusCode <- authState |> LanguagePrimitives.EnumToValue
@@ -203,6 +204,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
             let resp = self.HttpContext.Response
+
             let token =
                 credentials
                 |> LoginHeaders.Decode
