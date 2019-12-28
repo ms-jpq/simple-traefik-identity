@@ -6,8 +6,8 @@ open STI.Auth
 open DomainAgnostic
 open DotNetExtensions
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Http.Extensions
 open Microsoft.Extensions.Logging
-
 
 module Preauth =
 
@@ -17,14 +17,16 @@ module Preauth =
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
                 async {
-                    let headers, cookies = Exts.Metadata ctx.Request
+                    let req = ctx.Request
+                    let headers, cookies = Exts.Metadata req
 
-                    let domain = ctx.Request.Host |> ToString
+                    let domain = req.Host |> ToString
                     let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
 
                     match authStatus with
                     | AuthState.Authorized ->
-                        let info = sprintf "%A" authStatus
+                        let uri = req.GetDisplayUrl() |> ToString
+                        let info = sprintf "%s - %s :: %A" req.Method uri authStatus
                         logger.LogInformation info
                     | _ -> do! next.Invoke(ctx) |> Async.AwaitTask
                 }

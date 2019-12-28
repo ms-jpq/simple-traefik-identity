@@ -71,7 +71,7 @@ open Ingress
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
-    let TEAPOT = 418
+    let teapot = 418
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
@@ -147,7 +147,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 logger.LogWarning info
                 let policy = cookiePolicy headers.host
                 resp.Cookies.Append(cOpts.name, tkn, policy)
-                resp.StatusCode <- TEAPOT
+                resp.StatusCode <- teapot
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
                 let info =
@@ -170,7 +170,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let resp = self.HttpContext.Response
             let policy = cookiePolicy headers.host
             resp.Cookies.Delete(cOpts.name, policy)
-            resp.StatusCode <- TEAPOT
+            resp.StatusCode <- teapot
             logger.LogWarning info
             return {| ok = true |} |> JsonResult :> ActionResult
         }
