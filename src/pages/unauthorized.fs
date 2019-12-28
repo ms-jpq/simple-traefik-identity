@@ -2,14 +2,25 @@ namespace STI.Views
 
 open DomainAgnostic
 open Giraffe.GiraffeViewEngine
-open STI.Consts
 open Layout
+
 
 module Unauthorized =
 
     let private denied = div [] [ h1 [] [ str "🚫" ] ]
 
 
-    let Render background tit =
-        let nodes = Layout background tit "js/unauthorized.js" "css/unauthorized.css" [ denied ]
-        nodes |> renderHtmlDocument
+
+    let Render resources background tit =
+        async {
+            let! _js = "js/unauthorized.js"
+                       |> Load resources
+                       |> Async.StartChild
+            let! _css = "css/unauthorized.css"
+                        |> Load resources
+                        |> Async.StartChild
+            let! js = _js
+            let! css = _css
+            let nodes = Layout js css background tit [ denied ]
+            return nodes |> renderHtmlDocument
+        }

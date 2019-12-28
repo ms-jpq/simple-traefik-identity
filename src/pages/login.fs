@@ -2,8 +2,8 @@ namespace STI.Views
 
 open DomainAgnostic
 open Giraffe.GiraffeViewEngine
-open STI.Consts
 open Layout
+
 
 module Login =
 
@@ -11,9 +11,7 @@ module Login =
     let private login =
         div []
             [ h1 [] []
-              form
-                  [ _action ""
-                    _method "post" ]
+              form []
                   [ div []
                         [ span [] [ str "🧕🏻" ]
                           input
@@ -26,6 +24,16 @@ module Login =
                                 _name "password" ] ]
                     input [ _type "submit" ] ] ]
 
-    let Render background tit =
-        let nodes = Layout background tit "js/login.js" "css/login.css" [ login ]
-        nodes |> renderHtmlDocument
+    let Render resources background tit =
+        async {
+            let! _js = "js/login.js"
+                       |> Load resources
+                       |> Async.StartChild
+            let! _css = "css/login.css"
+                        |> Load resources
+                        |> Async.StartChild
+            let! js = _js
+            let! css = _css
+            let nodes = Layout js css background tit [ login ]
+            return nodes |> renderHtmlDocument
+        }

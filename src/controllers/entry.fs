@@ -50,7 +50,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
-    let renderReq = deps.Boxed.background, deps.Boxed.title
+    let renderReq = deps.Boxed.resources, deps.Boxed.background, deps.Boxed.title
 
     let cookiePolicy (domain: string) =
         let d =
@@ -68,6 +68,28 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         let seek (u: User) = u.name = username && u.password = password
         authModel.users |> Seq.tryFind seek
 
+    let render authState (req: HttpRequest) =
+        let uri = req.GetDisplayUrl() |> ToString
+        let info = sprintf "%A - %A" uri authState
+        match authState with
+        | AuthState.Authorized ->
+            async {
+                logger.LogInformation info
+                return "", Seq.empty
+            }
+        | AuthState.Unauthorized ->
+            async {
+                logger.LogWarning info
+                let! html = renderReq |||> Unauthorized.Render
+                return html, Seq.empty
+            }
+        | AuthState.Unauthenticated
+        | _ ->
+            async {
+                logger.LogWarning info
+                let! html = renderReq |||> Login.Render
+                return html, Seq.empty
+            }
 
     [<HttpGet("")>]
     member self.Index() =
@@ -78,21 +100,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let host = req.Host |> ToString
             let authState = checkAuth jOpts cOpts host cookies
 
-            let uri = req.GetDisplayUrl() |> ToString
-            let info = sprintf "%A - %A" uri authState
-
-            let html, respHeaders =
-                match authState with
-                | AuthState.Authorized ->
-                    logger.LogInformation info
-                    "", Seq.empty
-                | AuthState.Unauthorized ->
-                    logger.LogWarning info
-                    renderReq ||> Unauthorized.Render, Seq.empty
-                | AuthState.Unauthenticated
-                | _ ->
-                    logger.LogWarning info
-                    renderReq ||> Login.Render, Seq.empty
+            let! html, respHeaders = render authState req
 
             Exts.AddHeaders respHeaders resp
             resp.StatusCode <- authState |> LanguagePrimitives.EnumToValue

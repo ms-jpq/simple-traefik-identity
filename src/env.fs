@@ -42,6 +42,7 @@ module Env =
           model: AuthModel
           cookie: CookieOpts
           jwt: JWTopts
+          resources: string
           title: string
           background: string }
 
@@ -255,5 +256,6 @@ module Env =
           model = model
           cookie = cookie
           jwt = jwt
+          resources = RESOURCESDIR
           title = title
           background = background }
