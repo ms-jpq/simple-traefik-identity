@@ -14,7 +14,6 @@ open Microsoft.AspNetCore.Http.Extensions
 open Microsoft.Extensions.Logging
 open System
 open System.Text
-open System.IdentityModel.Tokens.Jwt
 
 
 module Ingress =
@@ -48,7 +47,6 @@ open Ingress
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
-    let teapot = 418
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
@@ -129,7 +127,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                     |> ToString
                     |> cookiePolicy
                 resp.Cookies.Append(cOpts.name, tkn, policy)
-                resp.StatusCode <- teapot
+                resp.StatusCode <- StatusCodes.Status418ImATeapot
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
                 let info =
@@ -157,7 +155,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> ToString
                 |> cookiePolicy
             resp.Cookies.Delete(cOpts.name, policy)
-            resp.StatusCode <- teapot
+            resp.StatusCode <- StatusCodes.Status418ImATeapot
             logger.LogWarning info
             return {| ok = true |} |> JsonResult :> ActionResult
         }

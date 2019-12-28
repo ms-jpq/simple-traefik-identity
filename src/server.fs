@@ -6,6 +6,7 @@ open Microsoft.AspNetCore.CookiePolicy
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.StaticFiles
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.Hosting
@@ -29,6 +30,13 @@ module Server =
         services.AddSingleton(Container deps).AddSingleton(globals) |> ignore
         services.AddControllers() |> ignore
 
+
+    let private confStaticFiles =
+        let respond (ctx: StaticFileResponseContext) = ctx.Context.Response.StatusCode <- StatusCodes.Status418ImATeapot
+        let options = StaticFileOptions()
+        options.OnPrepareResponse <- Action<StaticFileResponseContext> respond
+        options
+
     let private confCookies =
         let options = CookiePolicyOptions()
         options.HttpOnly <- HttpOnlyPolicy.Always
@@ -36,12 +44,14 @@ module Server =
         options.Secure <- CookieSecurePolicy.SameAsRequest
         options
 
+
     let private confApp baseUri (app: IApplicationBuilder) =
-        app.UseStatusCodePages().UseDeveloperExceptionPage() |> ignore
+        app.UseDeveloperExceptionPage() |> ignore
         app.UseMiddleware<RewriteMiddleware>() |> ignore
         app.UseMiddleware<PreauthMiddleware>() |> ignore
+        app.UseStatusCodePages() |> ignore
         app.UsePathBase(baseUri) |> ignore
-        app.UseStaticFiles() |> ignore
+        app.UseStaticFiles(confStaticFiles) |> ignore
         app.UseCookiePolicy(confCookies) |> ignore
         app.UseRouting() |> ignore
         app.UseCors() |> ignore
