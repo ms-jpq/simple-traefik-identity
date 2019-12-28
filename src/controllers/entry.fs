@@ -78,7 +78,7 @@ module Ingress =
 
     [<CLIMutable>]
     type LoginHeaders =
-        { [<FromHeader(Name = "Proxy-Authorization")>]
+        { [<FromHeader(Name = "STI-Authorization")>]
           authorization: string }
 
         static member Decode headers =
@@ -202,10 +202,11 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     [<HttpGet("")>]
-    [<HttpHeader("Proxy-Authorization")>]
+    [<HttpHeader("STI-Authorization")>]
     member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
             let resp = self.HttpContext.Response
+            let uri = headers |> ForwardedHeaders.OriginalUri
 
             let token =
                 credentials
@@ -217,17 +218,23 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
             match token with
             | Some t ->
+                let info =
+                    sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
+                logger.LogInformation info
                 let policy = cookiePolicy headers.host
                 resp.Cookies.Append(cOpts.name, t, policy)
                 resp.StatusCode <- TEAPOT
                 return {| ok = true |} |> JsonResult :> ActionResult
-            | None -> return {| ok = false |} |> JsonResult :> ActionResult
+            | None ->
+                let info = sprintf "Authentication attempt failed -- %A" uri
+                logger.LogWarning info
+                return {| ok = false |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
 
 
     [<HttpGet("")>]
-    [<HttpHeader("Proxy-Deauthorization")>]
+    [<HttpHeader("STI-Deauthorization")>]
     member self.Logout(headers: ForwardedHeaders) =
         async {
             let resp = self.HttpContext.Response
