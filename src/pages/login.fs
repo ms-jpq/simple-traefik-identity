@@ -12,7 +12,7 @@ module Login =
         div []
             [ h1 [] []
               form
-                  [ _action "sti-login"
+                  [ _action ""
                     _method "post" ]
                   [ div []
                         [ span [] [ str "🧕🏻" ]
@@ -27,5 +27,5 @@ module Login =
                     input [ _type "submit" ] ] ]
 
     let Render background tit =
-        let nodes = Layout background tit "" "" [ login ]
+        let nodes = Layout background tit "js/login.js" "css/login.css" [ login ]
         nodes |> renderHtmlDocument

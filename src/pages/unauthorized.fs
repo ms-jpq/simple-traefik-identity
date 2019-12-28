@@ -11,5 +11,5 @@ module Unauthorized =
 
 
     let Render background tit =
-        let nodes = Layout background tit "" "" [ denied ]
+        let nodes = Layout background tit "js/unauthorized.js" "css/unauthorized.css" [ denied ]
         nodes |> renderHtmlDocument

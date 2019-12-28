@@ -1,0 +1,42 @@
+body {
+  min-height: 100vh;
+  max-height: 100%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: aliceblue;
+}
+
+a {
+  color: #2a2a2a;
+}
+
+main {
+  margin: auto;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+footer {
+  margin-top: 5em;
+  display: flex;
+  flex-direction: column;
+}
+
+footer > * {
+  align-self: center;
+  margin-bottom: 0.3em;
+}
+
+@media (max-width: 45em) {
+  main {
+    width: 100vw;
+  }
+}
+
+@media (min-width: 45em) {
+  main {
+    width: 45em;
+  }
+}

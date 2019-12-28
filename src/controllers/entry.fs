@@ -101,7 +101,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpGet("")>]
+    [<HttpPost("")>]
     [<HttpHeader("STI-Authorization")>]
     member self.Login(credentials: LoginHeaders) =
         async {
@@ -138,7 +138,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpGet("")>]
+    [<HttpPost("")>]
     [<HttpHeader("STI-Deauthorization")>]
     member self.Logout() =
         async {

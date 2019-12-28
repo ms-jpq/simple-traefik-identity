@@ -9,12 +9,12 @@ module Logout =
 
     let private logout =
         form
-            [ _action "sti-logout"
+            [ _action ""
               _method "post" ]
             [ h1 [] [ str "Hasta la vista, baby" ]
               input [ _type "submit" ] ]
 
 
     let Render background tit =
-        let nodes = Layout background tit "" "" [ logout ]
+        let nodes = Layout background tit "js/logout.js" "css/logout.css" [ logout ]
         nodes |> renderHtmlDocument

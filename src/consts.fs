@@ -5,7 +5,7 @@ open System.IO
 
 module Consts =
 
-    let PROJECTURI = "https://ms-jpq.github.io/simple-traefik-Identity/"
+    let PROJECTURI = "https://ms-jpq.github.io/simple-traefik-identity/"
 
     let CONTENTROOT = Directory.GetCurrentDirectory()
 
