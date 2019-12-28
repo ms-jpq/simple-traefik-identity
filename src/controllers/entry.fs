@@ -163,26 +163,28 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         jwt.WriteToken token
 
     let checkAuth domain cookies =
-        maybe {
-            let! claims = cookies
-                          |> Map.tryFind cOpts.name
-                          |> Option.bind validateJWT
+        let state =
+            maybe {
+                let! claims = cookies
+                              |> Map.tryFind cOpts.name
+                              |> Option.bind validateJWT
 
-            let! model = JwtClaim.DeSerialize claims
-            let auth =
-                match model.access with
-                | All -> AuthState.Authorized
-                | Named lst ->
-                    let chk =
-                        lst
-                        |> Set
-                        |> flip Set.contains
-                    match chk domain with
-                    | true -> AuthState.Authorized
-                    | false -> AuthState.Unauthorized
-            return auth
-        }
-        |> Option.defaultValue AuthState.Unauthenticated
+                let! model = JwtClaim.DeSerialize claims
+                let auth =
+                    match model.access with
+                    | All -> AuthState.Authorized
+                    | Named lst ->
+                        let chk =
+                            lst
+                            |> Set
+                            |> flip Set.contains
+                        match chk domain with
+                        | true -> AuthState.Authorized
+                        | false -> AuthState.Unauthorized
+                return auth
+            }
+
+        state |> Option.defaultValue AuthState.Unauthenticated
 
 
     let login username password =
