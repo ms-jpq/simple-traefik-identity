@@ -9,7 +9,7 @@ module Logout =
 
     let private logout =
         form
-            [ _action "/logout"
+            [ _action "sti-logout"
               _method "post" ]
             [ h1 [] [ str "Hasta la vista, baby" ]
               input [ _type "submit" ] ]

@@ -6,12 +6,11 @@ open STI.Consts
 open STI.Views
 open DomainAgnostic
 open DomainAgnostic.Globals
-open DomainAgnostic.Reflection
 open DotNetExtensions
+open DotNetExtensions.Routing
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
-open Microsoft.Extensions.Primitives
 open Microsoft.IdentityModel.Tokens
 open System
 open System.IO
@@ -107,7 +106,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
         JwtSecurityTokenHandler().CreateEncodedJwt(desc)
 
-
     let checkAuth domain cookies =
         maybe {
             let! claims = cookies
@@ -129,7 +127,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         }
         |> Option.defaultValue AuthState.Unauthenticated
 
-
     let fdAuth headers =
         let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
         maybe {
@@ -144,7 +141,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Option.ForceUnwrap err
 
 
-    [<HttpGet("")>]
+    [<Route("")>]
     member self.Index() =
         async {
             let req = self.HttpContext.Request
@@ -165,9 +162,15 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("/login")>]
-    member self.Login(username: string, password: string, goto: string) =
+    [<Route("")>]
+    [<HttpHeader("STI-LOGIN")>]
+    member self.Login() =
         async {
+            let username = "1"
+            let password = "1"
+            let goto = ""
+            sprintf "Login Attempt - %s" username |> logger.LogInformation
+
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let headers, cookies = Exts.Metadata req
@@ -196,7 +199,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("/logout")>]
+    [<Route("")>]
+    [<HttpHeader("STI-LOGOUT")>]
     member self.Logout() =
         async {
             let req = self.HttpContext.Request

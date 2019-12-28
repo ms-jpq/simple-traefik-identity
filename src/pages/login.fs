@@ -12,14 +12,18 @@ module Login =
         div []
             [ h1 [] []
               form
-                  [ _action "/login"
+                  [ _action "sti-login"
                     _method "post" ]
                   [ div []
                         [ span [] [ str "🧕🏻" ]
-                          input [] ]
+                          input
+                              [ _type "text"
+                                _name "username" ] ]
                     div []
                         [ span [] [ str "🗝️" ]
-                          input [ _type "password" ] ]
+                          input
+                              [ _type "password"
+                                _name "password" ] ]
                     input [ _type "submit" ] ] ]
 
     let Render background tit =
