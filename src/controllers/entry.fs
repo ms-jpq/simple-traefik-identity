@@ -194,15 +194,23 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     member self.Index(headers: ForwardedHeaders) =
         async {
             let resp = self.HttpContext.Response
+            let uri = headers |> ForwardedHeaders.OriginalUri
             let _, cookies = Exts.Metadata self.HttpContext.Request
             let authState = checkAuth headers.host cookies
+            let info = sprintf "%A - %A" uri authState
 
             let html, respHeaders =
                 match authState with
-                | AuthState.Authorized -> "", Seq.empty
-                | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render, Seq.empty
+                | AuthState.Authorized ->
+                    logger.LogInformation info
+                    "", Seq.empty
+                | AuthState.Unauthorized ->
+                    logger.LogWarning info
+                    renderReq ||> Unauthorized.Render, Seq.empty
                 | AuthState.Unauthenticated
-                | _ -> renderReq ||> Login.Render, Seq.empty
+                | _ ->
+                    logger.LogWarning info
+                    renderReq ||> Login.Render, Seq.empty
 
             Exts.AddHeaders respHeaders resp
             resp.StatusCode <- authState |> LanguagePrimitives.EnumToValue
