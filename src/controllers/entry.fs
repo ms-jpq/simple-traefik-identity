@@ -50,6 +50,7 @@ module Ingress =
                 return res
             }
 
+
     [<CLIMutable>]
     type ForwardedHeaders =
         { [<FromHeader(Name = "X-Forwarded-For")>]
@@ -178,37 +179,39 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         authModel.users |> Seq.tryFind seek
 
 
-    [<Route("")>]
+    [<HttpGet("")>]
     member self.Index(headers: ForwardedHeaders) =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let _, cookies = Exts.Metadata req
-            let auth = checkAuth headers.host cookies
+            let _, cookies = Exts.Metadata self.HttpContext.Request
+            let authState = checkAuth headers.host cookies
 
             let html =
-                match auth with
+                match authState with
                 | AuthState.Authorized -> ""
                 | AuthState.Unauthorized -> renderReq ||> Unauthorized.Render
                 | _ -> renderReq ||> Login.Render
 
-            resp.StatusCode <- LanguagePrimitives.EnumToValue auth
+            self.HttpContext.Response.StatusCode <- authState |> LanguagePrimitives.EnumToValue
             return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
 
-    [<Route("")>]
-    [<HttpHeader("STI-Login")>]
+    [<HttpGet("")>]
+    [<HttpHeader("STI-Authorization")>]
     member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
+
             let token =
                 credentials
                 |> LoginHeaders.Decode
-                |> Option.bind (flip (||>) login)
+                |> Option.bind ((<||) login)
                 |> Option.map (fun u -> { access = u.domains })
                 |> Option.map JwtClaim.Serialize
-                |> Option.map newJWT
+                // |> Option.map newJWT
+            echo token
+
+            let token = Some ""
 
             match token with
             | Some t ->
@@ -220,8 +223,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<Route("")>]
-    [<HttpHeader("STI-Logout")>]
+    [<HttpPost("/logout")>]
     member self.Logout(headers: ForwardedHeaders) =
         async {
             let policy = cookiePolicy headers.host
