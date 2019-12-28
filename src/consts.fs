@@ -13,6 +13,8 @@ module Consts =
 
     let RESOURCESDIR = CONTENTROOT + "/views/"
 
+    let BACKGROUND = "/assets/background.png"
+
     let ENVPREFIX = "STI"
 
     let private readme =

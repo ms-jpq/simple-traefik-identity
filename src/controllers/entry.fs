@@ -91,7 +91,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 return html, Seq.empty
             }
 
-    [<Route("")>]
+    [<HttpGet("{*.}")>]
     member self.Index() =
         async {
             let req = self.HttpContext.Request
@@ -109,7 +109,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
+    [<HttpPost("{*.}")>]
     [<HttpHeader("STI-Authorization")>]
     member self.Login(credentials: LoginHeaders) =
         async {
@@ -150,7 +150,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
+    [<HttpPost("{*.}")>]
     [<HttpHeader("STI-Deauthorization")>]
     member self.Logout() =
         async {

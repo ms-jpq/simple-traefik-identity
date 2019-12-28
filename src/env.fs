@@ -158,7 +158,7 @@ module Env =
         |> Seq.ofArray
         |> Seq.choose pUser
 
-    let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover("background.png")
+    let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover(BACKGROUND)
 
     let private pTitle find = find (prefix "TITLE") |> Option.Recover DEFAULTTITLE
 
