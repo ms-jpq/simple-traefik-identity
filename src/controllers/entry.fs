@@ -50,6 +50,27 @@ module Ingress =
                 return res
             }
 
+    [<CLIMutable>]
+    type LoginHeaders =
+        { [<FromHeader(Name = "STI-Authorization")>]
+          authorization: string }
+        static member Decode res =
+            try
+                let credentials = res.authorization.Split(" ")
+                if credentials.[0] <> "Basic" then failwith "..."
+
+                let decoded =
+                    credentials.[1]
+                    |> Convert.FromBase64String
+                    |> Encoding.UTF8.GetString
+                    |> fun s -> s.Split(":")
+
+                let username = decoded.[0]
+                let password = decoded.[1]
+                (username, password) |> Some
+
+            with _ -> None
+
 
 open Ingress
 
@@ -141,6 +162,9 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Option.ForceUnwrap err
 
 
+    let login username password = authModel.users |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+
+
     [<Route("")>]
     member self.Index() =
         async {
@@ -163,44 +187,34 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     [<Route("")>]
-    [<HttpHeader("STI-LOGIN")>]
-    member self.Login() =
+    [<HttpHeader("STI-Login")>]
+    member self.Login(credentials: LoginHeaders) =
         async {
-            let username = "1"
-            let password = "1"
-            let goto = ""
-            sprintf "Login Attempt - %s" username |> logger.LogInformation
-
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let headers, cookies = Exts.Metadata req
             let domain, path = fdAuth headers
-            let policy = cookiePolicy domain
 
             let token =
-                authModel.users
-                |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+                credentials
+                |> LoginHeaders.Decode
+                |> Option.bind (flip (||>) login)
                 |> Option.map (fun u -> { access = u.domains })
                 |> Option.map JwtClaim.Serialize
                 |> Option.map newJWT
 
             match token with
             | Some t ->
-                let headers = [ "Location", goto ]
+                let policy = cookiePolicy domain
                 resp.Cookies.Append(cOpts.name, t, policy)
-                resp.StatusCode <- 302
-                Exts.AddHeaders headers resp
-                return self.Content("", "text/html") :> ActionResult
-            | None ->
-                let html = renderReq ||> Login.Render
-                resp.StatusCode <- LanguagePrimitives.EnumToValue AuthState.Unauthenticated
-                return self.Content(html, "text/html") :> ActionResult
+                return {| ok = true |} |> JsonResult :> ActionResult
+            | None -> return {| ok = false |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
 
 
     [<Route("")>]
-    [<HttpHeader("STI-LOGOUT")>]
+    [<HttpHeader("STI-Logout")>]
     member self.Logout() =
         async {
             let req = self.HttpContext.Request
@@ -208,11 +222,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let headers, cookies = Exts.Metadata req
             let domain, path = fdAuth headers
             let policy = cookiePolicy domain
-            let headers = [ "Refresh", "0" ]
-            let html = renderReq ||> Login.Render
-
-            Exts.AddHeaders headers resp
             resp.Cookies.Delete(cOpts.name, policy)
-            return self.Content(html, "text/html") :> ActionResult
+            return {| ok = true |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
