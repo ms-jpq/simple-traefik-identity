@@ -4,40 +4,54 @@ open STI.Env
 open DomainAgnostic
 open DotNetExtensions
 open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.Logging
-
+open System.Net
 
 module Rewrite =
 
-    type RewriteMiddleware(next: RequestDelegate, logger: ILogger<RewriteMiddleware>, deps: Container<Variables>) =
-
-        let extract find =
-            maybe {
-                let! m = find "X-Forwarded-Method"
-                let! p = find "X-Forwarded-Uri"
-                let method = m |> ToString
-
-                let path =
-                    p
-                    |> ToString
-                    |> Result.New PathString
-                    |> Option.OfResult
-                    |> Option.defaultValue (PathString(""))
-
-                return method, path
-            }
+    type RewriteMiddleware(next: RequestDelegate) =
 
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
                 async {
-                    let headers, _ = Exts.Metadata ctx.Request
+                    let req = ctx.Request
+                    let conn = ctx.Connection
+                    let headers, _ = Exts.Metadata req
+                    let find = flip Map.tryFind headers
 
-                    let method, path =
-                        flip Map.tryFind headers
-                        |> extract
-                        |> option.ForceUnwrap "Missing Traefik Headers"
-                    ctx.Request.Method <- method
-                    ctx.Request.Path <- path
+                    conn.RemoteIpAddress <-
+                        find "X-Forwarded-For"
+                        |> Option.map ToString
+                        |> Option.bind ((Result.New IPAddress.Parse) >> Option.OfResult)
+                        |> Option.defaultValue conn.RemoteIpAddress
+
+                    conn.RemotePort <-
+                        find "X-Forwarded-Port"
+                        |> Option.map ToString
+                        |> Option.bind Parse.Int
+                        |> Option.defaultValue conn.RemotePort
+
+                    req.Scheme <-
+                        find "X-Forwarded-Proto"
+                        |> Option.map ToString
+                        |> Option.defaultValue req.Scheme
+
+                    req.Method <-
+                        find "X-Forwarded-Method"
+                        |> Option.map ToString
+                        |> Option.defaultValue req.Method
+
+                    req.Host <-
+                        find "X-Forwarded-Host"
+                        |> Option.map ToString
+                        |> Option.bind ((Result.New HostString) >> Option.OfResult)
+                        |> Option.defaultValue req.Host
+
+                    req.Path <-
+                        find "X-Forwarded-Uri"
+                        |> Option.map ToString
+                        |> Option.bind ((Result.New PathString) >> Option.OfResult)
+                        |> Option.defaultValue req.Path
+
 
                     do! next.Invoke(ctx) |> Async.AwaitTask
                 }

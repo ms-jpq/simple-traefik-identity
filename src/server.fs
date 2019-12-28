@@ -16,6 +16,7 @@ open STI.Middlewares.Preauth
 open STI.Middlewares.Rewrite
 
 
+
 [<RequireQualifiedAccess>]
 module Server =
 
@@ -35,15 +36,10 @@ module Server =
         options.Secure <- CookieSecurePolicy.SameAsRequest
         options
 
-    let private confForward =
-        let options = ForwardedHeadersOptions()
-        options
-
     let private confApp baseUri (app: IApplicationBuilder) =
         app.UseStatusCodePages().UseDeveloperExceptionPage() |> ignore
-        app.UseMiddleware<PreauthMiddleware>() |> ignore
-        app.UseForwardedHeaders(confForward) |> ignore
         app.UseMiddleware<RewriteMiddleware>() |> ignore
+        app.UseMiddleware<PreauthMiddleware>() |> ignore
         app.UsePathBase(baseUri) |> ignore
         app.UseStaticFiles() |> ignore
         app.UseCookiePolicy(confCookies) |> ignore

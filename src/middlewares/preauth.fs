@@ -2,17 +2,11 @@ namespace STI.Middlewares
 
 open STI
 open STI.Env
+open STI.Auth
 open DomainAgnostic
-open DomainAgnostic.Globals
 open DotNetExtensions
-open DotNetExtensions.Routing
-open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.Logging
-open Microsoft.IdentityModel.Tokens
-open System
-open System.Text
-open System.IdentityModel.Tokens.Jwt
 
 
 module Preauth =
@@ -24,5 +18,14 @@ module Preauth =
             let task =
                 async {
                     let headers, cookies = Exts.Metadata ctx.Request
-                    do! next.Invoke(ctx) |> Async.AwaitTask }
+
+                    let domain = ctx.Request.Host |> ToString
+                    let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
+
+                    match authStatus with
+                    | AuthState.Authorized ->
+                        let info = sprintf "%A" authStatus
+                        logger.LogInformation info
+                    | _ -> do! next.Invoke(ctx) |> Async.AwaitTask
+                }
             task |> Async.StartAsTask

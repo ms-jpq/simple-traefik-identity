@@ -20,8 +20,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)/auth.fs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)/middlewares/preauth.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/middlewares/rewrite.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/middlewares/preauth.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/pages/layout.fs" />
