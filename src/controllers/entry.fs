@@ -20,6 +20,8 @@ open System.IdentityModel.Tokens.Jwt
 
 module Ingress =
 
+    let TEAPOT = 418
+
     type AuthState =
         | Unauthenticated = 401
         | Unauthorized = 403
@@ -119,8 +121,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy
 
     let credentials =
-        let bytes = authModel.secret |> Encoding.UTF8.GetBytes
-        let key = SymmetricSecurityKey(bytes)
+        let key = authModel.secret |> SymmetricSecurityKey
         let algo = SecurityAlgorithms.HmacSha256Signature
         SigningCredentials(key, algo)
 
@@ -201,33 +202,34 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     [<HttpHeader("STI-Authorization")>]
     member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
-
+            let resp = self.HttpContext.Response
             let token =
                 credentials
                 |> LoginHeaders.Decode
                 |> Option.bind ((<||) login)
                 |> Option.map (fun u -> { access = u.domains })
                 |> Option.map JwtClaim.Serialize
-                // |> Option.map newJWT
-            echo token
-
-            let token = Some ""
+                |> Option.map newJWT
 
             match token with
             | Some t ->
                 let policy = cookiePolicy headers.host
-                self.HttpContext.Response.Cookies.Append(cOpts.name, t, policy)
+                resp.Cookies.Append(cOpts.name, t, policy)
+                resp.StatusCode <- TEAPOT
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None -> return {| ok = false |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
 
 
-    [<HttpPost("/logout")>]
+    [<HttpGet("")>]
+    [<HttpHeader("STI-Deauthorization")>]
     member self.Logout(headers: ForwardedHeaders) =
         async {
+            let resp = self.HttpContext.Response
             let policy = cookiePolicy headers.host
-            self.HttpContext.Response.Cookies.Delete(cOpts.name, policy)
+            resp.Cookies.Delete(cOpts.name, policy)
+            resp.StatusCode <- TEAPOT
             return {| ok = true |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask

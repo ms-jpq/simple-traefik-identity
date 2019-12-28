@@ -2,11 +2,13 @@ namespace STI
 
 
 open DomainAgnostic
+open Consts
+open Legivel.Serialization
 open Microsoft.Extensions.Logging
 open System
 open System.IO
-open Consts
-open Legivel.Serialization
+open System.Text
+
 
 
 module Env =
@@ -31,7 +33,7 @@ module Env =
           domains: Domains }
 
     type AuthModel =
-        { secret: string
+        { secret: byte array
           users: User seq }
 
     type Variables =
@@ -214,7 +216,7 @@ module Env =
             | Some _ -> acc
             | None -> acc ++ [ curr ]
 
-        let secret =
+        let ss =
             match (s1, s2) with
             | Some s1, _ -> s1
             | _, Some s2 -> s2
@@ -222,6 +224,11 @@ module Env =
 
         let groups = Seq.fold rg Seq.empty (g1 ++ g2)
         let users = Seq.fold ru Seq.empty (u1 ++ u2)
+
+        let secret = ss |> Encoding.UTF8.GetBytes
+        match secret.Length with
+        | x when x < 128 -> failwith "Secret not long enough!"
+        | _ -> ()
 
         model secret groups users
 
