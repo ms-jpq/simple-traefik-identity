@@ -40,8 +40,8 @@ module Server =
     let private confCookies =
         let options = CookiePolicyOptions()
         options.HttpOnly <- HttpOnlyPolicy.Always
-        options.MinimumSameSitePolicy <- SameSiteMode.Lax
         options.Secure <- CookieSecurePolicy.SameAsRequest
+        options.MinimumSameSitePolicy <- SameSiteMode.Strict
         options
 
 

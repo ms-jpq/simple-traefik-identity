@@ -61,7 +61,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         let policy = CookieOptions()
         policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Domain <- d
-        policy.Path <- null
         policy
 
     let login username password =
