@@ -238,10 +238,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     [<HttpHeader("STI-Deauthorization")>]
     member self.Logout(headers: ForwardedHeaders) =
         async {
+            let uri = headers |> ForwardedHeaders.OriginalUri
+            let info = sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
             let resp = self.HttpContext.Response
             let policy = cookiePolicy headers.host
             resp.Cookies.Delete(cOpts.name, policy)
             resp.StatusCode <- TEAPOT
+            logger.LogWarning info
             return {| ok = true |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
