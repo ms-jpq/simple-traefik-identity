@@ -51,12 +51,36 @@ module Ingress =
             }
 
     [<CLIMutable>]
+    type ForwardedHeaders =
+        { [<FromHeader(Name = "X-Forwarded-For")>]
+          origin: string
+          [<FromHeader(Name = "X-Forwarded-Host")>]
+          host: string
+          [<FromHeader(Name = "X-Forwarded-Method")>]
+          method: string
+          [<FromHeader(Name = "X-Forwarded-Port")>]
+          port: int
+          [<FromHeader(Name = "X-Forwarded-Proto")>]
+          scheme: string
+          [<FromHeader(Name = "X-Forwarded-Server")>]
+          proxy: string
+          [<FromHeader(Name = "X-Forwarded-Uri")>]
+          path: string
+          [<FromHeader(Name = "X-Real-Ip")>]
+          originIP: string }
+
+        static member OriginalUri headers =
+            sprintf "%s://%s:%d/%s" headers.scheme headers.host headers.port headers.path |> Uri
+
+
+    [<CLIMutable>]
     type LoginHeaders =
         { [<FromHeader(Name = "STI-Authorization")>]
           authorization: string }
-        static member Decode res =
+
+        static member Decode headers =
             try
-                let credentials = res.authorization.Split(" ")
+                let credentials = headers.authorization.Split(" ")
                 if credentials.[0] <> "Basic" then failwith "..."
 
                 let decoded =
@@ -148,31 +172,19 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         }
         |> Option.defaultValue AuthState.Unauthenticated
 
-    let fdAuth headers =
-        let err = "Missing Required Headers :: X-Forwarded-Host, X-Forwarded-Uri"
-        maybe {
-            let! domain = headers
-                          |> Map.tryFind "X-Forwarded-Host"
-                          |> Option.map ToString
-            let! path = headers
-                        |> Map.tryFind "X-Forwarded-Uri"
-                        |> Option.map ToString
-            return domain, path
-        }
-        |> Option.ForceUnwrap err
 
-
-    let login username password = authModel.users |> Seq.tryFind (fun u -> u.name = username && u.password = password)
+    let login username password =
+        let seek (u: User) = u.name = username && u.password = password
+        authModel.users |> Seq.tryFind seek
 
 
     [<Route("")>]
-    member self.Index() =
+    member self.Index(headers: ForwardedHeaders) =
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let headers, cookies = Exts.Metadata req
-            let domain, path = fdAuth headers
-            let auth = checkAuth domain cookies
+            let _, cookies = Exts.Metadata req
+            let auth = checkAuth headers.host cookies
 
             let html =
                 match auth with
@@ -188,13 +200,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     [<Route("")>]
     [<HttpHeader("STI-Login")>]
-    member self.Login(credentials: LoginHeaders) =
+    member self.Login(headers: ForwardedHeaders, credentials: LoginHeaders) =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let headers, cookies = Exts.Metadata req
-            let domain, path = fdAuth headers
-
             let token =
                 credentials
                 |> LoginHeaders.Decode
@@ -205,8 +212,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
             match token with
             | Some t ->
-                let policy = cookiePolicy domain
-                resp.Cookies.Append(cOpts.name, t, policy)
+                let policy = cookiePolicy headers.host
+                self.HttpContext.Response.Cookies.Append(cOpts.name, t, policy)
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None -> return {| ok = false |} |> JsonResult :> ActionResult
         }
@@ -215,14 +222,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     [<Route("")>]
     [<HttpHeader("STI-Logout")>]
-    member self.Logout() =
+    member self.Logout(headers: ForwardedHeaders) =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let headers, cookies = Exts.Metadata req
-            let domain, path = fdAuth headers
-            let policy = cookiePolicy domain
-            resp.Cookies.Delete(cOpts.name, policy)
+            let policy = cookiePolicy headers.host
+            self.HttpContext.Response.Cookies.Delete(cOpts.name, policy)
             return {| ok = true |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
