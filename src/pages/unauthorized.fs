@@ -7,11 +7,11 @@ open Layout
 
 module Unauthorized =
 
-    let private denied = div [] [ h1 [] [ str "🚫" ] ]
+    let private denied goto = div [] [ h1 [] [ str "🚫" ] ]
 
 
 
-    let Render resources background tit =
+    let Render resources background tit goto =
         async {
             let! _js = "js/unauthorized.js"
                        |> Load resources
@@ -21,6 +21,6 @@ module Unauthorized =
                         |> Async.StartChild
             let! js = _js
             let! css = _css
-            let nodes = Layout js css background tit [ denied ]
+            let nodes = Layout js css background tit [ denied goto ]
             return nodes |> renderHtmlDocument
         }

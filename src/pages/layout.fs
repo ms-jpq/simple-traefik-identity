@@ -13,9 +13,6 @@ module Layout =
     let Load resources resource =
         resource
         |> sprintf "%s%s" resources
-        |> echo
-        resource
-        |> sprintf "%s%s" resources
         |> File.ReadAllTextAsync
         |> Async.AwaitTask
 
@@ -31,7 +28,7 @@ module Layout =
                         [ background
                           |> _css
                           |> str ]
-                    script [ _async; _defer ] [ rawText js ]
+                    script [] [ rawText js ]
                     title [] [ str tit ] ]
               body []
                   [ main [] contents

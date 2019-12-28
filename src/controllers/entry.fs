@@ -80,18 +80,18 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         | AuthState.Unauthorized ->
             async {
                 logger.LogWarning info
-                let! html = renderReq |||> Unauthorized.Render
+                let! html = "" |> (|||>) renderReq Unauthorized.Render
                 return html, Seq.empty
             }
         | AuthState.Unauthenticated
         | _ ->
             async {
                 logger.LogWarning info
-                let! html = renderReq |||> Login.Render
+                let! html = req.GetEncodedUrl() |> (|||>) renderReq Login.Render
                 return html, Seq.empty
             }
 
-    [<HttpGet("")>]
+    [<Route("")>]
     member self.Index() =
         async {
             let req = self.HttpContext.Request
@@ -115,6 +115,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
+            resp.StatusCode <- StatusCodes.Status418ImATeapot
+
             let uri = req.GetDisplayUrl() |> ToString
 
             let token =
@@ -125,17 +127,19 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> Option.map JwtClaim.Serialize
                 |> Option.map (newJWT jOpts)
 
+
             match token with
             | Some tkn ->
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
-                logger.LogWarning info
+
                 let policy =
                     req.Host
                     |> ToString
                     |> cookiePolicy
+
                 resp.Cookies.Append(cOpts.name, tkn, policy)
-                resp.StatusCode <- StatusCodes.Status418ImATeapot
+                logger.LogWarning info
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
                 let info =
@@ -151,19 +155,21 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     member self.Logout() =
         async {
             let req = self.HttpContext.Request
+            let resp = self.HttpContext.Response
+            resp.StatusCode <- StatusCodes.Status418ImATeapot
+
             let uri = req.GetDisplayUrl() |> ToString
 
             let info =
                 sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
 
-            let resp = self.HttpContext.Response
 
             let policy =
                 req.Host
                 |> ToString
                 |> cookiePolicy
+
             resp.Cookies.Delete(cOpts.name, policy)
-            resp.StatusCode <- StatusCodes.Status418ImATeapot
             logger.LogWarning info
             return {| ok = true |} |> JsonResult :> ActionResult
         }

@@ -8,7 +8,7 @@ open Layout
 module Logout =
 
     let private logout =
-        form []
+        form [ _action "" ]
             [ h1 [] [ str "Hasta la vista, baby" ]
               input [ _type "submit" ] ]
 
