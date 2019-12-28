@@ -32,23 +32,23 @@ module Ingress =
 
         static member Serialize claim =
             match claim.access with
-            | All -> [ "access", "*" :> obj ] |> Map.ofSeq
+            | All -> [ "access", "*" ] |> Map.ofSeq
             | Named lst ->
-                let access = String.Join(",", lst |> Seq.toArray) :> obj
+                let access = String.Join(",", lst |> Seq.toArray)
                 [ "access", access ] |> Map.ofSeq
 
         static member DeSerialize claim =
             maybe {
                 let! access = claim |> Map.tryFind "access"
-                let res =
-                    match access with
-                    | "*" -> { access = All }
-                    | c ->
-                        let a =
-                            c.Split(",")
-                            |> Seq.ofArray
-                            |> Named
-                        { access = a }
+                let! res = match CAST<string> access with
+                           | Some "*" -> Some { access = All }
+                           | Some c ->
+                               let a =
+                                   c.Split(",")
+                                   |> Seq.ofArray
+                                   |> Named
+                               Some { access = a }
+                           | None -> None
                 return res
             }
 
@@ -109,6 +109,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
     let renderReq = deps.Boxed.background, deps.Boxed.title
+    let jwt = JwtSecurityTokenHandler()
 
 
     let cookiePolicy domain =
@@ -135,10 +136,9 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             desc.ValidateAudience <- false
             desc
         try
-            let principal = JwtSecurityTokenHandler().ValidateToken(token, validation, ref null)
-            principal.Claims
-            |> Seq.map (fun c -> c.Type, c.Value)
-            |> Map.ofSeq
+            jwt.ValidateToken(token, validation, ref null) |> ignore
+            jwt.ReadJwtToken(token).Payload
+            |> Map.OfKVP
             |> Some
         with e ->
             logger.LogError(e, "")
@@ -154,13 +154,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             desc.Audience <- jOpts.audience
             desc.IssuedAt <- now |> Nullable
             desc.Expires <- now + jOpts.lifespan |> Nullable
-            desc.Claims <-
-                claims
-                |> Map.toSeq
-                |> dict
             desc
 
-        JwtSecurityTokenHandler().CreateEncodedJwt(desc)
+        let token = jwt.CreateJwtSecurityToken(desc)
+        claims
+        |> Map.toSeq
+        |> Seq.iter token.Payload.Add
+        jwt.WriteToken token
 
     let checkAuth domain cookies =
         maybe {
