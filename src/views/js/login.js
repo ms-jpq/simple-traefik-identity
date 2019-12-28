@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const encoded = `Basic ${btoa(`${username}:${password}`)}`
       const params = { method: "POST", headers: { [header]: encoded } }
-      return await (await fetch("", params)).json()
+      return await (await fetch("/", params)).json()
     } catch (e) {
       alert(e.message)
     }
