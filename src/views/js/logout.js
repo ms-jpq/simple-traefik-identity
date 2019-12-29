@@ -13,10 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.onsubmit = async (e) => {
     e.preventDefault()
-    const { ok } = await query(username, password)
+    const { ok } = await query()
     if (!ok) {
       alert(`🙅‍♀️🔐`)
+    } else {
+      location.reload()
     }
   }
-  form.querySelector(`input[name="username"]`).focus()
 })

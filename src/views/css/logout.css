@@ -89,6 +89,10 @@ footer > * {
   margin-bottom: 0.3em;
 }
 
+input[type="submit"] {
+  cursor: pointer;
+}
+
 @media (max-width: 25em) {
   main > div {
     width: 100vw;
@@ -117,8 +121,8 @@ footer > * {
 form > input {
   background-image: url("/assets/shutdown.png");
   background-size: cover;
-  width: 4em;
-  height: 4em;
+  width: 6em;
+  height: 6em;
   overflow: hidden;
   border: solid;
   border-radius: 0.25em;

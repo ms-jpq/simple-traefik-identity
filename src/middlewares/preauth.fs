@@ -8,6 +8,8 @@ open DotNetExtensions
 open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Http.Extensions
 open Microsoft.Extensions.Logging
+open System
+
 
 module Preauth =
 
@@ -18,16 +20,22 @@ module Preauth =
             let task =
                 async {
                     let req = ctx.Request
-                    let headers, cookies = Exts.Metadata req
+                    let _, cookies = Exts.Metadata req
+
+                    let referer =
+                        req.GetTypedHeaders().Referer
+                        |> Option.OfNullable
+                        |> Option.defaultValue (Uri("about:blank"))
 
                     let domain = req.Host |> ToString
                     let path = req.Path |> ToString
                     let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
+                    let logout = deps.Boxed.logoutUri
 
                     let branch =
-                        match deps.Boxed.logoutUri with
-                        | Some l -> l.Host = domain && l.LocalPath = path
-                        | None -> false
+                        let c1 = logout.Host = domain && logout.LocalPath = path
+                        let c2 = logout.Host = referer.Host && logout.LocalPath = referer.LocalPath
+                        c1 || c2
 
                     match (branch, authStatus) with
                     | (false, AuthState.Authorized) ->

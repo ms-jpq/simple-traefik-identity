@@ -89,6 +89,11 @@ footer > * {
   margin-bottom: 0.3em;
 }
 
+
+input[type="submit"] {
+  cursor: pointer;
+}
+
 @media (max-width: 25em) {
   main > div {
     width: 100vw;

@@ -76,17 +76,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         let uri = req.GetDisplayUrl() |> ToString
         let info = sprintf "%A - %A" uri authState
         let code = authState |> LanguagePrimitives.EnumToValue
-
-        let branch =
-            match logout with
-            | Some l -> l.Host = host && l.LocalPath = path
-            | None -> false
+        let branch = logout.Host = host && logout.LocalPath = path
 
         match (branch, authState) with
-        | true, _ ->
+        | true, AuthState.Authorized ->
             async {
                 let! html = renderReq |||> Logout.Render
-                logger.LogWarning "🔐 -- Logged out -- 🔐"
+                logger.LogInformation info
                 return html, StatusCodes.Status418ImATeapot
             }
         | _, AuthState.Authorized ->
@@ -178,7 +174,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
             let info =
                 sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
-
 
             let policy =
                 req.Host

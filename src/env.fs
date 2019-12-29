@@ -42,7 +42,7 @@ module Env =
           model: AuthModel
           cookie: CookieOpts
           jwt: JWTopts
-          logoutUri: Uri option
+          logoutUri: Uri
           resources: string
           title: string
           background: string }
@@ -258,6 +258,7 @@ module Env =
             | _, Some uri -> Some uri
             | _, _ -> None
             |> Option.bind Parse.Uri
+            |> Option.defaultValue(Uri("about:blank"))
 
         let title = ymlConf.title |> Option.defaultValue (pTitle find)
 
