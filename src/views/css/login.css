@@ -41,22 +41,18 @@ main > div {
   overflow: hidden;
 }
 
-main > div > div:first-child {
+main > div > div:first-child,
+main > div > div:last-child {
   width: 100%;
   flex-grow: 1;
-  background-color: rgb(5, 80, 230);
+  background: linear-gradient(75deg, rgb(25, 75, 200) 0%,  rgb(5, 80, 230) 30%, rgb(25, 75, 200) 100%);
 }
 
 main > div > div:nth-child(3) {
   width: 100%;
-  background-color: rgb(80, 115, 215);
+  background: linear-gradient(80deg, rgb(80, 115, 215) 0%, rgb(100, 130, 220) 25%, rgb(80, 115, 215) 100%);
 }
 
-main > div > div:last-child {
-  width: 100%;
-  flex-grow: 1;
-  background-color: rgb(5, 80, 230);
-}
 
 main > div > span{
   width: 100%;
@@ -67,31 +63,9 @@ main > div > span{
 main > div > div:nth-child(3) {
   height: 60%;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-form {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: center;
-}
-
-form > div {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-  width: 100%;
-  display: flex;
   flex-direction: row;
-  justify-content: center;
-  font-size: larger;
-  font-weight: bolder;
-}
-
-form > div:last-child {
-  display: none;
+  align-items: center;
+  justify-content: space-around;
 }
 
 output {
@@ -125,4 +99,50 @@ footer > * {
   main > div {
     width: 25em;
   }
+}
+
+
+/*
+ *
+ */
+
+main > div > div:nth-child(3) > div:first-child,
+main > div > div:nth-child(3) > div:last-child {
+  flex-grow: 1;
+  width: 10%;
+}
+
+
+form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+form > div {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  font-size: larger;
+  font-weight: bolder;
+}
+
+form > div > span {
+  flex-grow: 1;
+}
+form > div > input {
+  flex-grow: 1;
+}
+
+form > div:nth-last-child(2) > input {
+  flex-grow: 0;
+}
+
+form > div:last-child {
+  display: none;
 }

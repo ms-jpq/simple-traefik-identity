@@ -7,7 +7,7 @@ open Layout
 
 module Unauthorized =
 
-    let private denied goto = div [] [ h1 [] [ str "🚫" ] ]
+    let private denied goto = form [] [ h1 [] [ str "🚫" ] ]
 
 
 

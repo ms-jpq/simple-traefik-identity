@@ -16,7 +16,7 @@ module Layout =
         |> File.ReadAllTextAsync
         |> Async.AwaitTask
 
-    let Layout js css background tit contents =
+    let Layout js css background tit form =
         html []
             [ head []
                   [ meta [ _charset "utf-8" ]
@@ -32,7 +32,13 @@ module Layout =
                     title [] [ str tit ] ]
               body []
                   [ div [] []
-                    main [] contents
+                    main []
+                        [ div []
+                              [ div [] []
+                                span [] []
+                                div [] form
+                                span [] []
+                                div [] [] ] ]
                     div [] []
                     footer [] [ a [ _href PROJECTURI ] [ str "github" ] ]
                     div [] [] ] ]

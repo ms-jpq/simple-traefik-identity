@@ -9,28 +9,25 @@ module Login =
 
 
     let private login goto =
-        div []
-            [ div [] []
-              span [] []
-              div []
-                  [ form [ _action "" ]
-                        [ div []
-                              [ span [] [ str "🧕🏻" ]
-                                input
-                                    [ _type "text"
-                                      _name "username" ] ]
-                          div []
-                              [ span [] [ str "🗝️" ]
-                                input
-                                    [ _type "password"
-                                      _name "password" ] ]
-                          div []
-                              [ input
-                                  [ _type "submit"
-                                    _value "👉" ] ]
-                          div [] [ output [ _name "goto" ] [ rawText goto ] ] ] ]
-              span [] []
-              div [] [] ]
+        [ div [] []
+          form [ _action "" ]
+              [ div []
+                    [ span [] [ str "🧕🏻" ]
+                      input
+                          [ _type "text"
+                            _name "username" ] ]
+                div []
+                    [ span [] [ str "🗝️" ]
+                      input
+                          [ _type "password"
+                            _name "password" ] ]
+                div []
+                    [ span [] []
+                      input
+                          [ _type "submit"
+                            _value "➡️" ] ]
+                div [] [ output [ _name "goto" ] [ rawText goto ] ] ]
+          div [] [] ]
 
     let Render resources background tit goto =
         async {
@@ -42,6 +39,6 @@ module Login =
                         |> Async.StartChild
             let! js = _js
             let! css = _css
-            let nodes = Layout js css background tit [ login goto ]
+            let nodes = Layout js css background tit (login goto)
             return nodes |> renderHtmlDocument
         }
