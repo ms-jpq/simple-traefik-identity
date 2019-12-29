@@ -36,6 +36,16 @@ module Env =
         { domains: string seq
           users: User seq }
 
+    type RateLimit =
+        { header: string
+          rate: int
+          timer: TimeSpan }
+
+    type Display =
+        { resources: string
+          title: string
+          background: string }
+
     type Variables =
         { logLevel: LogLevel
           port: int
@@ -43,9 +53,8 @@ module Env =
           cookie: CookieOpts
           jwt: JWTopts
           logoutUri: Uri
-          resources: string
-          title: string
-          background: string }
+          rateLimit: RateLimit
+          display: Display }
 
     type RawGroup =
         { name: string
@@ -66,6 +75,8 @@ module Env =
           groups: RawGroup list option
           users: RawUser list option
           logoutUri: string option
+          ipHeader: string option
+          rateLimit: int option
           title: string option
           background: string option }
 
@@ -88,6 +99,8 @@ module Env =
               groups = None
               users = None
               logoutUri = None
+              rateLimit = None
+              ipHeader = None
               title = None
               background = None }
 
@@ -163,9 +176,16 @@ module Env =
 
     let private pLogout find = find (prefix "LOG_OUT")
 
-    let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover(BACKGROUND)
+    let private pRate find =
+        find (prefix "RATE_LIMIT")
+        |> Option.bind Parse.Int
+        |> Option.defaultValue RATE
 
-    let private pTitle find = find (prefix "TITLE") |> Option.Recover DEFAULTTITLE
+    let private pipHeader find = find (prefix "IP_HEADEER") |> Option.defaultValue REMOTEADDR
+
+    let private pBackground find = find (prefix "BACKGROUND") |> Option.defaultValue BACKGROUND
+
+    let private pTitle find = find (prefix "TITLE") |> Option.defaultValue DEFAULTTITLE
 
 
     let private pmodel (groups: RawGroup seq) (users: RawUser seq) =
@@ -241,7 +261,6 @@ module Env =
             { domains = domains
               users = users }
 
-
         let cookie =
             { name = COOKIENAME
               maxAge = COOKIEMAXAGE }
@@ -258,11 +277,24 @@ module Env =
             | _, Some uri -> Some uri
             | _, _ -> None
             |> Option.bind Parse.Uri
-            |> Option.defaultValue(Uri("about:blank"))
+            |> Option.defaultValue (Uri("about:blank"))
+
+        let ipHeader = ymlConf.ipHeader |> Option.defaultValue (pipHeader find)
+        let rate = ymlConf.rateLimit |> Option.defaultValue (pRate find)
+
+        let rateLimit =
+            { header = ipHeader
+              timer = RATELIMIT
+              rate = rate }
 
         let title = ymlConf.title |> Option.defaultValue (pTitle find)
 
         let background = ymlConf.background |> Option.defaultValue (pBackground find)
+
+        let display =
+            { resources = RESOURCESDIR
+              title = title
+              background = background }
 
         { logLevel = log
           port = port
@@ -270,6 +302,5 @@ module Env =
           cookie = cookie
           jwt = jwt
           logoutUri = logout
-          resources = RESOURCESDIR
-          title = title
-          background = background }
+          rateLimit = rateLimit
+          display = display }

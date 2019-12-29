@@ -1,5 +1,6 @@
 namespace STI.Views
 
+open STI.Env
 open DomainAgnostic
 open Giraffe.GiraffeViewEngine
 open Layout
@@ -11,16 +12,16 @@ module Unauthorized =
 
 
 
-    let Render resources background tit goto =
+    let Render (display: Display) goto =
         async {
             let! _js = "js/unauthorized.js"
-                       |> Load resources
+                       |> Load display.resources
                        |> Async.StartChild
             let! _css = "css/unauthorized.css"
-                        |> Load resources
+                        |> Load display.resources
                         |> Async.StartChild
             let! js = _js
             let! css = _css
-            let nodes = Layout js css background tit [ denied goto ]
+            let nodes = Layout js css display.background display.title [ denied goto ]
             return nodes |> renderHtmlDocument
         }

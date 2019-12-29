@@ -1,5 +1,6 @@
 namespace STI.Views
 
+open STI.Env
 open DomainAgnostic
 open Giraffe.GiraffeViewEngine
 open Layout
@@ -36,16 +37,16 @@ module Login =
                 div [] [ output [ _name "goto" ] [ rawText goto ] ] ]
           div [] [] ]
 
-    let Render resources background tit goto =
+    let Render (display: Display) goto =
         async {
             let! _js = "js/login.js"
-                       |> Load resources
+                       |> Load display.resources
                        |> Async.StartChild
             let! _css = "css/login.css"
-                        |> Load resources
+                        |> Load display.resources
                         |> Async.StartChild
             let! js = _js
             let! css = _css
-            let nodes = Layout js css background tit (login goto)
+            let nodes = Layout js css display.background display.title (login goto)
             return nodes |> renderHtmlDocument
         }

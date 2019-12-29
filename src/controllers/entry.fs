@@ -51,7 +51,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
-    let renderReq = deps.Boxed.resources, deps.Boxed.background, deps.Boxed.title
+    let display = deps.Boxed.display
     let logout = deps.Boxed.logoutUri
 
     let cookiePolicy (domain: string) =
@@ -81,7 +81,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         match (branch, authState) with
         | true, AuthState.Authorized ->
             async {
-                let! html = renderReq |||> Logout.Render
+                let! html = Logout.Render display
                 logger.LogInformation info
                 return html, StatusCodes.Status418ImATeapot
             }
@@ -93,14 +93,14 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         | _, AuthState.Unauthorized ->
             async {
                 logger.LogWarning info
-                let! html = "" |> (|||>) renderReq Unauthorized.Render
+                let! html = "" |> Unauthorized.Render display
                 return html, code
             }
         | _, AuthState.Unauthenticated
         | _ ->
             async {
                 logger.LogWarning info
-                let! html = req.GetEncodedUrl() |> (|||>) renderReq Login.Render
+                let! html = req.GetEncodedUrl() |> Login.Render display
                 return html, code
             }
 

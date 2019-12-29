@@ -13,7 +13,7 @@ module Entry =
         echo README
 
         let deps = Opts()
-        use state = new GlobalVar<State>({ dummy = 0 })
+        use state = new GlobalVar<State>({ history = Map.empty })
 
         use server = Server.Build deps state
         server.Run()

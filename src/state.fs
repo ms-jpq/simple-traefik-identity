@@ -7,4 +7,4 @@ open Consts
 
 
 type State =
-    { dummy: int }
+    { history: Map<string, DateTime seq> }

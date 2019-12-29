@@ -41,3 +41,9 @@ https://ms-jpq.github.io/simple-traefik-identity/
     let TOKENAUDIENCE = "STI"
 
     let TOKENLIFESPAN = TimeSpan.FromHours(24.0)
+
+    let REMOTEADDR = "X-Forwarded-For"
+
+    let RATELIMIT = TimeSpan.FromSeconds(5.0)
+
+    let RATE = 5
