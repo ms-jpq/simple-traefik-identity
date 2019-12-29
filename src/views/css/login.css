@@ -137,6 +137,11 @@ figure > div:last-child {
   width: 4em;
   height: 4em;
   overflow: hidden;
+  border: solid;
+  border-radius: 0.25em;
+  border-color: gold;
+  border-width: 0.2em;
+  box-shadow: 0.3em -0.1em 0.3em 0em  rgb(40, 40, 40, 0.5);
 }
 
 section {
@@ -158,14 +163,14 @@ section > div > span {
 }
 
 section > div:first-child > span {
-  background-image: url("/assets/go.png");
+  background-image: url("/assets/users.png");
   background-size: 100% 100%;
   height: 100%;
   width: 1.5em;
 }
 
 section > div:nth-child(2) > span {
-  background-image: url("/assets/go.png");
+  background-image: url("/assets/key.png");
   background-size: 100% 100%;
   height: 100%;
   width: 1.5em;
