@@ -31,5 +31,8 @@ module Layout =
                     script [] [ rawText js ]
                     title [] [ str tit ] ]
               body []
-                  [ main [] contents
-                    footer [] [ a [ _href PROJECTURI ] [ str "github" ] ] ] ]
+                  [ div [] []
+                    main [] contents
+                    div [] []
+                    footer [] [ a [ _href PROJECTURI ] [ str "github" ] ]
+                    div [] [] ] ]

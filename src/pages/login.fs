@@ -10,23 +10,27 @@ module Login =
 
     let private login goto =
         div []
-            [ h1 [] []
-              form [ _action "" ]
-                  [ div []
-                        [ span [] [ str "🧕🏻" ]
-                          input
-                              [ _type "text"
-                                _name "username" ] ]
-                    div []
-                        [ span [] [ str "🗝️" ]
-                          input
-                              [ _type "password"
-                                _name "password" ] ]
-                    div []
-                        [ input
-                            [ _type "submit"
-                              _value "👉" ] ]
-                    div [] [ output [ _name "goto" ] [ rawText goto ] ] ] ]
+            [ div [] []
+              span [] []
+              div []
+                  [ form [ _action "" ]
+                        [ div []
+                              [ span [] [ str "🧕🏻" ]
+                                input
+                                    [ _type "text"
+                                      _name "username" ] ]
+                          div []
+                              [ span [] [ str "🗝️" ]
+                                input
+                                    [ _type "password"
+                                      _name "password" ] ]
+                          div []
+                              [ input
+                                  [ _type "submit"
+                                    _value "👉" ] ]
+                          div [] [ output [ _name "goto" ] [ rawText goto ] ] ] ]
+              span [] []
+              div [] [] ]
 
     let Render resources background tit goto =
         async {
