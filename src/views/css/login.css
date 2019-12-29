@@ -132,7 +132,7 @@ figure {
 }
 
 figure > div:last-child {
-  background-image: url("/assets/dog.png");
+  background-image: url("/assets/chess.bmp");
   background-size: cover;
   width: 4em;
   height: 4em;
