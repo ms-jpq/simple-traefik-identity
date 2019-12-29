@@ -12,20 +12,27 @@ module Login =
         [ div [] []
           form [ _action "" ]
               [ div []
-                    [ span [] [ str "🧕🏻" ]
-                      input
-                          [ _type "text"
-                            _name "username" ] ]
-                div []
-                    [ span [] [ str "🗝️" ]
-                      input
-                          [ _type "password"
-                            _name "password" ] ]
-                div []
                     [ span [] []
-                      input
-                          [ _type "submit"
-                            _value "➡️" ] ]
+                      figure []
+                          [ div [] []
+                            div [] [] ]
+                      section []
+                          [ div []
+                                [ span [] []
+                                  input
+                                      [ _type "text"
+                                        _name "username" ] ]
+                            div []
+                                [ span [] []
+                                  input
+                                      [ _type "password"
+                                        _name "password" ] ]
+                            div []
+                                [ span [] []
+                                  input
+                                      [ _type "submit"
+                                        _value " " ] ] ]
+                      span [] [] ]
                 div [] [ output [ _name "goto" ] [ rawText goto ] ] ]
           div [] [] ]
 

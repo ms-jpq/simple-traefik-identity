@@ -45,7 +45,7 @@ main > div > div:first-child,
 main > div > div:last-child {
   width: 100%;
   flex-grow: 1;
-  background: linear-gradient(75deg, rgb(25, 75, 200) 0%,  rgb(5, 80, 230) 30%, rgb(25, 75, 200) 100%);
+  background: linear-gradient(75deg, rgb(0, 77, 163) 0%,  rgb(20, 90, 200) 30%, rgb(0, 77, 163) 100%);
 }
 
 main > div > div:nth-child(3) {
@@ -106,13 +106,6 @@ footer > * {
  *
  */
 
-main > div > div:nth-child(3) > div:first-child,
-main > div > div:nth-child(3) > div:last-child {
-  flex-grow: 1;
-  width: 10%;
-}
-
-
 form {
   display: flex;
   flex-direction: column;
@@ -127,20 +120,63 @@ form > div {
   width: 100%;
   display: flex;
   flex-direction: row;
-  justify-content: center;
+  justify-content: space-around;
   font-size: larger;
   font-weight: bolder;
 }
 
-form > div > span {
-  flex-grow: 1;
+figure {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
-form > div > input {
+
+figure > div:last-child {
+  background-image: url("/assets/dog.png");
+  background-size: cover;
+  width: 4em;
+  height: 4em;
+  overflow: hidden;
+}
+
+section {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+}
+
+section > div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  height: 1.5em;
+  padding-top: 0.5em;
+}
+
+section > div > span {
   flex-grow: 1;
 }
 
-form > div:nth-last-child(2) > input {
-  flex-grow: 0;
+section > div:first-child > span {
+  background-image: url("/assets/go.png");
+  background-size: 100% 100%;
+  height: 100%;
+  width: 1.5em;
+}
+
+section > div:nth-child(2) > span {
+  background-image: url("/assets/go.png");
+  background-size: 100% 100%;
+  height: 100%;
+  width: 1.5em;
+}
+
+
+
+section input[type="submit"] {
+  background-image: url("/assets/go.png");
+  background-size: 100% 100%;
+  width: 2.5em;
 }
 
 form > div:last-child {
