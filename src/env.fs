@@ -30,7 +30,7 @@ module Env =
     type User =
         { name: string
           password: string
-          domains: Domains }
+          subDomains: Domains }
 
     type AuthModel =
         { domains: string seq
@@ -48,7 +48,7 @@ module Env =
 
     type RawGroup =
         { name: string
-          domains: string list }
+          subDomains: string list }
         static member Identity a b = a.name = b.name
 
     type RawUser =
@@ -118,7 +118,7 @@ module Env =
 
 
     let private pDomain find =
-        find (prefix "DOMAIN")
+        find (prefix "DOMAINS")
         |> Option.map (fun (d: string) -> d.Split(";"))
         |> Option.map Seq.ofArray
         |> Option.defaultValue Seq.empty
@@ -130,7 +130,7 @@ module Env =
         match group.Split(":") |> List.ofArray with
         | [ name; domains ] ->
             { name = name
-              domains = domains.Split(",") |> List.ofArray }
+              subDomains = domains.Split(",") |> List.ofArray }
             |> Some
         | _ -> None
 
@@ -179,12 +179,12 @@ module Env =
             let domains =
                 groups
                 |> Seq.filter (fun g -> chk g.name)
-                |> Seq.Bind(fun g -> g.domains |> Seq.ofList)
+                |> Seq.Bind(fun g -> g.subDomains |> Seq.ofList)
                 |> Seq.fold pDomain (Named Seq.empty)
 
             { name = user.name
               password = user.password
-              domains = domains }
+              subDomains = domains }
 
         users |> Seq.map mkUser
 

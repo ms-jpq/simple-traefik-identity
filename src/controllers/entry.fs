@@ -43,6 +43,7 @@ module Ingress =
 
 open Ingress
 
+
 [<Route("")>]
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
@@ -55,12 +56,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let cookiePolicy (domain: string) =
         let d =
             deps.Boxed.model.domains
-            |> Seq.tryFind (fun d -> d.Contains(domain))
+            |> Seq.tryFind (fun d -> domain.EndsWith(d))
             |> Option.defaultValue domain
 
         let policy = CookieOptions()
         policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Domain <- d
+        policy.Path <- "/"
         policy
 
     let login username password =
@@ -122,7 +124,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 credentials
                 |> LoginHeaders.Decode
                 |> Option.bind ((<||) login)
-                |> Option.map (fun u -> { access = u.domains })
+                |> Option.map (fun u -> { access = u.subDomains })
                 |> Option.map JwtClaim.Serialize
                 |> Option.map (newJWT jOpts)
 

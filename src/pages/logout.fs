@@ -9,8 +9,9 @@ module Logout =
 
     let private logout =
         form [ _action "" ]
-            [ h1 [] [ str "Hasta la vista, baby" ]
-              input [ _type "submit" ] ]
+            [ input
+                [ _type "submit"
+                  _value " " ] ]
 
 
     let Render resources background tit =
