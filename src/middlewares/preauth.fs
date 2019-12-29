@@ -21,10 +21,16 @@ module Preauth =
                     let headers, cookies = Exts.Metadata req
 
                     let domain = req.Host |> ToString
+                    let path = req.Path |> ToString
                     let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
 
-                    match authStatus with
-                    | AuthState.Authorized ->
+                    let branch =
+                        match deps.Boxed.logoutUri with
+                        | Some l -> l.Host = domain && l.LocalPath = path
+                        | None -> false
+
+                    match (branch, authStatus) with
+                    | (false, AuthState.Authorized) ->
                         let uri = req.GetDisplayUrl() |> ToString
                         let info = sprintf "%s - %s :: %A" req.Method uri authStatus
                         logger.LogInformation info

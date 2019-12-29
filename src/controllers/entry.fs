@@ -52,6 +52,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let jOpts = deps.Boxed.jwt
     let authModel = deps.Boxed.model
     let renderReq = deps.Boxed.resources, deps.Boxed.background, deps.Boxed.title
+    let logout = deps.Boxed.logoutUri
 
     let cookiePolicy (domain: string) =
         let d =
@@ -70,27 +71,43 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         authModel.users |> Seq.tryFind seek
 
     let render authState (req: HttpRequest) =
+        let host = req.Host |> ToString
+        let path = req.Path |> ToString
         let uri = req.GetDisplayUrl() |> ToString
         let info = sprintf "%A - %A" uri authState
-        match authState with
-        | AuthState.Authorized ->
+        let code = authState |> LanguagePrimitives.EnumToValue
+
+        let branch =
+            match logout with
+            | Some l -> l.Host = host && l.LocalPath = path
+            | None -> false
+
+        match (branch, authState) with
+        | true, _ ->
+            async {
+                let! html = renderReq |||> Logout.Render
+                logger.LogWarning "🔐 -- Logged out -- 🔐"
+                return html, StatusCodes.Status418ImATeapot
+            }
+        | _, AuthState.Authorized ->
             async {
                 logger.LogInformation info
-                return "", Seq.empty
+                return "", code
             }
-        | AuthState.Unauthorized ->
+        | _, AuthState.Unauthorized ->
             async {
                 logger.LogWarning info
                 let! html = "" |> (|||>) renderReq Unauthorized.Render
-                return html, Seq.empty
+                return html, code
             }
-        | AuthState.Unauthenticated
+        | _, AuthState.Unauthenticated
         | _ ->
             async {
                 logger.LogWarning info
                 let! html = req.GetEncodedUrl() |> (|||>) renderReq Login.Render
-                return html, Seq.empty
+                return html, code
             }
+
 
     [<HttpGet("{*.}")>]
     member self.Index() =
@@ -101,10 +118,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let host = req.Host |> ToString
             let authState = checkAuth jOpts cOpts host cookies
 
-            let! html, respHeaders = render authState req
-
-            Exts.AddHeaders respHeaders resp
-            resp.StatusCode <- authState |> LanguagePrimitives.EnumToValue
+            let! html, code = render authState req
+            resp.StatusCode <- code
             return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask

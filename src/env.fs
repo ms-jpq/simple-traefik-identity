@@ -42,6 +42,7 @@ module Env =
           model: AuthModel
           cookie: CookieOpts
           jwt: JWTopts
+          logoutUri: Uri option
           resources: string
           title: string
           background: string }
@@ -64,6 +65,7 @@ module Env =
           domains: string list option
           groups: RawGroup list option
           users: RawUser list option
+          logoutUri: string option
           title: string option
           background: string option }
 
@@ -85,6 +87,7 @@ module Env =
               domains = None
               groups = None
               users = None
+              logoutUri = None
               title = None
               background = None }
 
@@ -157,6 +160,8 @@ module Env =
         |> Option.defaultValue [||]
         |> Seq.ofArray
         |> Seq.choose pUser
+
+    let private pLogout find = find (prefix "LOG_OUT")
 
     let private pBackground find = find (prefix "BACKGROUND") |> Option.Recover(BACKGROUND)
 
@@ -247,6 +252,13 @@ module Env =
               audience = TOKENAUDIENCE
               lifespan = TOKENLIFESPAN }
 
+        let logout =
+            match (ymlConf.logoutUri, pLogout find) with
+            | Some uri, _ -> Some uri
+            | _, Some uri -> Some uri
+            | _, _ -> None
+            |> Option.bind Parse.Uri
+
         let title = ymlConf.title |> Option.defaultValue (pTitle find)
 
         let background = ymlConf.background |> Option.defaultValue (pBackground find)
@@ -256,6 +268,7 @@ module Env =
           model = model
           cookie = cookie
           jwt = jwt
+          logoutUri = logout
           resources = RESOURCESDIR
           title = title
           background = background }
