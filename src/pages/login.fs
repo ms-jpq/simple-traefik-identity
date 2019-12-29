@@ -22,7 +22,10 @@ module Login =
                           input
                               [ _type "password"
                                 _name "password" ] ]
-                    input [ _type "submit" ]
+                    div []
+                        [ input
+                            [ _type "submit"
+                              _value "👉" ] ]
                     div [] [ output [ _name "goto" ] [ rawText goto ] ] ] ]
 
     let Render resources background tit goto =

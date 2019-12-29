@@ -11,11 +11,36 @@ a {
 }
 
 main {
-  margin: auto;
+  padding-top: 35vh;
+  margin-left: auto;
+  margin-right: auto;
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+}
+
+form > div {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  font-size: larger;
+  font-weight: bolder;
+}
+
+
+output {
+  display: none;
 }
 
 footer {
@@ -29,14 +54,14 @@ footer > * {
   margin-bottom: 0.3em;
 }
 
-@media (max-width: 45em) {
+@media (max-width: 20em) {
   main {
     width: 100vw;
   }
 }
 
-@media (min-width: 45em) {
+@media (min-width: 20em) {
   main {
-    width: 45em;
+    width: 20em;
   }
 }

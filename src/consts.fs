@@ -13,7 +13,7 @@ module Consts =
 
     let RESOURCESDIR = CONTENTROOT + "/views/"
 
-    let BACKGROUND = "/assets/background.png"
+    let BACKGROUND = "/assets/xp.jpg"
 
     let ENVPREFIX = "STI"
 
