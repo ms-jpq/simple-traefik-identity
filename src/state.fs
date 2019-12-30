@@ -5,6 +5,6 @@ open DomainAgnostic
 open System
 open Consts
 
-
-type State =
-    { history: Map<string, DateTime seq> }
+module State =
+    type State =
+        { history: Map<string, DateTime seq> }

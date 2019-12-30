@@ -3,6 +3,7 @@ namespace STI.Controllers
 open STI
 open STI.Env
 open STI.Auth
+open STI.State
 open STI.Views
 open DomainAgnostic
 open DomainAgnostic.Globals
@@ -53,6 +54,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let authModel = deps.Boxed.model
     let display = deps.Boxed.display
     let logout = deps.Boxed.logoutUri
+    let rateLimit = deps.Boxed.rateLimit
 
     let cookiePolicy (domain: string) =
         let d =
@@ -154,8 +156,17 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 logger.LogWarning info
                 return {| ok = true |} |> JsonResult :> ActionResult
             | None ->
+                let headers, _ = Exts.Metadata req
+
+                let remote =
+                    headers
+                    |> Map.tryFind rateLimit.header
+                    |> Option.map ToString
+                    |> Option.defaultValue (self.HttpContext.Connection.RemoteIpAddress.ToString())
+
                 let info =
                     sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
+
                 logger.LogWarning info
                 return {| ok = false |} |> JsonResult :> ActionResult
         }

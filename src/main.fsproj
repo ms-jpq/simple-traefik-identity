@@ -18,6 +18,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)/env.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/state.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/auth.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/ratelimit.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/middlewares/rewrite.fs" />
