@@ -21,18 +21,18 @@ module RateLimit =
         |> Seq.Count((<=) ago)
         |> (>=) limit.rate
 
-    let update (state: State) ip now =
+    let update (limit: RateLimit) (state: State) ip now =
         let hist =
             state.history
             |> Map.tryFind ip
             |> Option.defaultValue Seq.empty
             |> Seq.Appending now
+            |> Seq.filter (fun d -> d <= now + limit.timer)
             |> flip (Map.add ip) state.history
         { history = hist }
-
 
     let next limit state ip =
         let now = DateTime.UtcNow
         let go = auth limit state ip now
-        let next = update state ip now
+        let next = update limit state ip now
         go, next
