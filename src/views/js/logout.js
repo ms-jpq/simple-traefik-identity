@@ -13,9 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   form.onsubmit = async (e) => {
     e.preventDefault()
-    const { ok } = await query()
+    const { ok, go } = await query()
     if (!ok) {
-      alert(`🙅‍♀️🔐`)
+      const msg = go === false ? `⏳` : `🙅‍♀️🔐`
+      alert(msg)
     } else {
       location.reload()
     }
