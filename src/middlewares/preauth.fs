@@ -15,30 +15,17 @@ module Preauth =
 
     type PreauthMiddleware(next: RequestDelegate, logger: ILogger<PreauthMiddleware>, deps: Container<Variables>) =
 
-        let logout = deps.Boxed.logoutUri
-
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
                 async {
                     let req = ctx.Request
                     let _, cookies = Exts.Metadata req
 
-                    let referer =
-                        req.GetTypedHeaders().Referer
-                        |> Option.OfNullable
-                        |> Option.defaultValue (Uri("about:blank"))
-
                     let domain = req.Host |> ToString
-                    let path = req.Path |> ToString
                     let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
 
-                    let passthrough =
-                        let c1 = logout.Host = domain && logout.LocalPath = path
-                        let c2 = logout.Host = referer.Host && logout.LocalPath = referer.LocalPath
-                        c1 || c2
-
-                    match (passthrough, authStatus) with
-                    | (false, AuthState.Authorized) ->
+                    match authStatus with
+                    | AuthState.Authorized ->
                         let uri = req.GetDisplayUrl() |> ToString
                         let info = sprintf "%s - %s :: %A" req.Method uri authStatus
                         logger.LogInformation info

@@ -38,6 +38,7 @@ module Server =
         options.OnPrepareResponse <- Action<StaticFileResponseContext> respond
         options
 
+
     let private confCookies =
         let options = CookiePolicyOptions()
         options.HttpOnly <- HttpOnlyPolicy.Always
@@ -49,10 +50,9 @@ module Server =
     let private confApp baseUri (app: IApplicationBuilder) =
         app.UseStatusCodePages() |> ignore
         app.UseDeveloperExceptionPage() |> ignore
+        app.UseStaticFiles(confStaticFiles) |> ignore
         app.UseMiddleware<RewriteMiddleware>() |> ignore
         app.UseMiddleware<PreauthMiddleware>() |> ignore
-        app.UsePathBase(baseUri) |> ignore
-        app.UseStaticFiles(confStaticFiles) |> ignore
         app.UseCookiePolicy(confCookies) |> ignore
         app.UseRouting() |> ignore
         app.UseCors() |> ignore
