@@ -27,7 +27,8 @@ module Server =
 
 
     let private confServices deps (globals: GlobalVar<'D>) (services: IServiceCollection) =
-        services.AddSingleton(Container deps).AddSingleton(globals) |> ignore
+        services.AddSingleton(Container deps) |> ignore
+        services.AddSingleton(globals) |> ignore
         services.AddControllers() |> ignore
 
 
@@ -46,10 +47,10 @@ module Server =
 
 
     let private confApp baseUri (app: IApplicationBuilder) =
+        app.UseStatusCodePages() |> ignore
         app.UseDeveloperExceptionPage() |> ignore
         app.UseMiddleware<RewriteMiddleware>() |> ignore
         app.UseMiddleware<PreauthMiddleware>() |> ignore
-        app.UseStatusCodePages() |> ignore
         app.UsePathBase(baseUri) |> ignore
         app.UseStaticFiles(confStaticFiles) |> ignore
         app.UseCookiePolicy(confCookies) |> ignore
