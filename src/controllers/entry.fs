@@ -52,28 +52,34 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
-    let authModel = deps.Boxed.model
-    let display = deps.Boxed.display
-    let logout = deps.Boxed.logoutUri
-    let rateLimit = deps.Boxed.rateLimit
 
     let cookiePolicy (domain: string) =
-        let d =
+        let policy = CookieOptions()
+        policy.MaxAge <- cOpts.maxAge |> Nullable
+        policy.Path <- "/"
+        policy.Domain <-
             deps.Boxed.model.domains
             |> Seq.tryFind (fun d -> domain.EndsWith(d))
             |> Option.defaultValue domain
 
-        let policy = CookieOptions()
-        policy.MaxAge <- cOpts.maxAge |> Nullable
-        policy.Domain <- d
-        policy.Path <- "/"
         policy
+
 
     let login username password =
         let seek (u: User) = u.name = username && u.password = password
-        authModel.users |> Seq.tryFind seek
+        deps.Boxed.model.users |> Seq.tryFind seek
+
+    let findToken credentials =
+        credentials
+        |> LoginHeaders.Decode
+        |> Option.bind ((<||) login)
+        |> Option.map (fun u -> { access = u.subDomains })
+        |> Option.map JwtClaim.Serialize
+        |> Option.map (newJWT jOpts)
+
 
     let render authState (req: HttpRequest) =
+        let logout = deps.Boxed.logoutUri
         let host = req.Host |> ToString
         let path = req.Path |> ToString
         let uri = req.GetDisplayUrl() |> ToString
@@ -84,7 +90,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         match (branch, authState) with
         | true, AuthState.Authorized ->
             async {
-                let! html = Logout.Render display
+                let! html = Logout.Render deps.Boxed.display
                 logger.LogInformation info
                 return html, StatusCodes.Status418ImATeapot
             }
@@ -96,14 +102,14 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         | _, AuthState.Unauthorized ->
             async {
                 logger.LogWarning info
-                let! html = "" |> Unauthorized.Render display
+                let! html = "" |> Unauthorized.Render deps.Boxed.display
                 return html, code
             }
         | _, AuthState.Unauthenticated
         | _ ->
             async {
                 logger.LogWarning info
-                let! html = req.GetEncodedUrl() |> Login.Render display
+                let! html = req.GetEncodedUrl() |> Login.Render deps.Boxed.display
                 return html, code
             }
 
@@ -130,27 +136,21 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let headers, _ = Exts.Metadata req
+            let conn = self.HttpContext.Connection
             resp.StatusCode <- StatusCodes.Status418ImATeapot
 
+            let headers, _ = Exts.Metadata req
             let uri = req.GetDisplayUrl() |> ToString
-
-            let token =
-                credentials
-                |> LoginHeaders.Decode
-                |> Option.bind ((<||) login)
-                |> Option.map (fun u -> { access = u.subDomains })
-                |> Option.map JwtClaim.Serialize
-                |> Option.map (newJWT jOpts)
+            let token = credentials |> findToken
 
             let remote =
                 headers
-                |> Map.tryFind rateLimit.header
+                |> Map.tryFind deps.Boxed.rateLimit.header
                 |> Option.map ToString
-                |> Option.defaultValue (self.HttpContext.Connection.RemoteIpAddress.ToString())
+                |> Option.defaultValue (conn.RemoteIpAddress.ToString())
 
             let! st = state.Get()
-            let go, ns = next rateLimit st remote
+            let go, ns = next deps.Boxed.rateLimit st remote
             do! state.Put(ns) |> Async.Ignore
 
             match (go, token) with
