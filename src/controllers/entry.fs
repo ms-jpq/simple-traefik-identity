@@ -5,6 +5,7 @@ open STI.Env
 open STI.Auth
 open STI.State
 open STI.Views
+open STI.RateLimit
 open DomainAgnostic
 open DomainAgnostic.Globals
 open DotNetExtensions
@@ -129,6 +130,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
+            let headers, _ = Exts.Metadata req
             resp.StatusCode <- StatusCodes.Status418ImATeapot
 
             let uri = req.GetDisplayUrl() |> ToString
@@ -141,9 +143,18 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> Option.map JwtClaim.Serialize
                 |> Option.map (newJWT jOpts)
 
+            let remote =
+                headers
+                |> Map.tryFind rateLimit.header
+                |> Option.map ToString
+                |> Option.defaultValue (self.HttpContext.Connection.RemoteIpAddress.ToString())
 
-            match token with
-            | Some tkn ->
+            let! st = state.Get()
+            let go, ns = next rateLimit st remote
+            do! state.Put(ns) |> Async.Ignore
+
+            match (go, token) with
+            | (true, Some tkn) ->
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
 
@@ -155,20 +166,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 resp.Cookies.Append(cOpts.name, tkn, policy)
                 logger.LogWarning info
                 return {| ok = true |} |> JsonResult :> ActionResult
-            | None ->
-                let headers, _ = Exts.Metadata req
-
-                let remote =
-                    headers
-                    |> Map.tryFind rateLimit.header
-                    |> Option.map ToString
-                    |> Option.defaultValue (self.HttpContext.Connection.RemoteIpAddress.ToString())
-
+            | _ ->
                 let info =
                     sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
 
                 logger.LogWarning info
-                return {| ok = false |} |> JsonResult :> ActionResult
+                return {| ok = false
+                          go = go |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask
 

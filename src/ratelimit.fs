@@ -33,6 +33,6 @@ module RateLimit =
 
     let next limit state ip =
         let now = DateTime.UtcNow
-        let res = auth limit state ip now
+        let go = auth limit state ip now
         let next = update state ip now
-        res, next
+        go, next
