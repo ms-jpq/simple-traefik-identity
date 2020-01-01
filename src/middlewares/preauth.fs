@@ -21,12 +21,12 @@ module Preauth =
                     let req = ctx.Request
                     let _, cookies = Exts.Metadata req
 
-                    let domain = req.Host |> ToString
+                    let domain = req.Host |> string
                     let authStatus = checkAuth deps.Boxed.jwt deps.Boxed.cookie domain cookies
 
                     match authStatus with
                     | AuthState.Authorized ->
-                        let uri = req.GetDisplayUrl() |> ToString
+                        let uri = req.GetDisplayUrl() |> string
                         let info = sprintf "%s - %s :: %A" req.Method uri authStatus
                         logger.LogInformation info
                     | _ -> do! next.Invoke(ctx) |> Async.AwaitTask

@@ -229,15 +229,14 @@ module Env =
 
 
     let Opts() =
-        let code s =
-            s
-            |> Decode.fromString Variables.Decoder
-            |> Result.mapError Exception
         ENV()
         |> Map.tryFind APPCONF
-        |> Option.defaultValue CONFFILE
+        |> Option.Recover CONFFILE
         |> slurp
         |> Async.RunSynchronously
         |> Result.bind (Result.New Y2J)
-        |> Result.bind code
+        |> Result.mapError (constantly "☢️ -- Unable to load config -- ☢️")
+        |> Result.bind (Decode.fromString Variables.Decoder)
+        |> Result.mapError (constantly "☢️ -- Unable to parse config -- ☢️")
+        |> Result.mapError Exception
         |> Result.ForceUnwrap

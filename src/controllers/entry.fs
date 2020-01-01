@@ -60,7 +60,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy.Domain <-
             deps.Boxed.model.baseDomains
             |> Seq.tryFind (fun d -> domain.EndsWith(d))
-            |> Option.defaultValue domain
+            |> Option.Recover domain
 
         policy
 
@@ -80,7 +80,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let render authState (req: HttpRequest) =
         let logout = deps.Boxed.logoutUri
-        let uri = req.GetDisplayUrl() |> ToString
+        let uri = req.GetDisplayUrl() |> string
         let info = sprintf "%A - %A" uri authState
         let code = authState |> LanguagePrimitives.EnumToValue
         let branch = logout.Host = req.Host.ToString() && logout.LocalPath = req.Path.ToString()
@@ -118,7 +118,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let _, cookies = Exts.Metadata self.HttpContext.Request
-            let host = req.Host |> ToString
+            let host = req.Host |> string
             let authState = checkAuth jOpts cOpts host cookies
 
             let! html, code = render authState req
@@ -138,20 +138,20 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             resp.StatusCode <- StatusCodes.Status418ImATeapot
 
             let headers, _ = Exts.Metadata req
-            let uri = req.GetDisplayUrl() |> ToString
+            let uri = req.GetDisplayUrl() |> string
             let token = credentials |> findToken
 
             let policy =
                 req.Host
-                |> ToString
+                |> string
                 |> cookiePolicy
 
             let! st = state.Get()
             let go, ns =
                 headers
                 |> Map.tryFind deps.Boxed.rateLimit.header
-                |> Option.map ToString
-                |> Option.defaultValue (conn.RemoteIpAddress.ToString())
+                |> Option.map string
+                |> Option.Recover(conn.RemoteIpAddress.ToString())
                 |> next deps.Boxed.rateLimit st
             do! state.Put(ns) |> Async.Ignore
 
@@ -182,14 +182,14 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let resp = self.HttpContext.Response
             resp.StatusCode <- StatusCodes.Status418ImATeapot
 
-            let uri = req.GetDisplayUrl() |> ToString
+            let uri = req.GetDisplayUrl() |> string
 
             let info =
                 sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
 
             let policy =
                 req.Host
-                |> ToString
+                |> string
                 |> cookiePolicy
 
             resp.Cookies.Delete(cOpts.name, policy)

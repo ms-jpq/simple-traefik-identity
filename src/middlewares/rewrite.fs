@@ -20,37 +20,37 @@ module Rewrite =
 
                     conn.RemoteIpAddress <-
                         find "X-Forwarded-For"
-                        |> Option.map ToString
+                        |> Option.map string
                         |> Option.bind ((Result.New IPAddress.Parse) >> Option.OfResult)
-                        |> Option.defaultValue conn.RemoteIpAddress
+                        |> Option.Recover conn.RemoteIpAddress
 
                     conn.RemotePort <-
                         find "X-Forwarded-Port"
-                        |> Option.map ToString
+                        |> Option.map string
                         |> Option.bind Parse.Int
-                        |> Option.defaultValue conn.RemotePort
+                        |> Option.Recover conn.RemotePort
 
                     req.Scheme <-
                         find "X-Forwarded-Proto"
-                        |> Option.map ToString
-                        |> Option.defaultValue req.Scheme
+                        |> Option.map string
+                        |> Option.Recover req.Scheme
 
                     req.Method <-
                         find "X-Forwarded-Method"
-                        |> Option.map ToString
-                        |> Option.defaultValue req.Method
+                        |> Option.map string
+                        |> Option.Recover req.Method
 
                     req.Host <-
                         find "X-Forwarded-Host"
-                        |> Option.map ToString
+                        |> Option.map string
                         |> Option.bind ((Result.New HostString) >> Option.OfResult)
-                        |> Option.defaultValue req.Host
+                        |> Option.Recover req.Host
 
                     req.Path <-
                         find "X-Forwarded-Uri"
-                        |> Option.map ToString
+                        |> Option.map string
                         |> Option.bind ((Result.New PathString) >> Option.OfResult)
-                        |> Option.defaultValue req.Path
+                        |> Option.Recover req.Path
 
 
                     do! next.Invoke(ctx) |> Async.AwaitTask

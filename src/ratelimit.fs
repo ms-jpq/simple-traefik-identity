@@ -17,7 +17,7 @@ module RateLimit =
         let ago = now - limit.timer
         state.history
         |> Map.tryFind ip
-        |> Option.defaultValue Seq.empty
+        |> Option.Recover Seq.empty
         |> Seq.Count((<=) ago)
         |> (>=) limit.rate
 
@@ -25,7 +25,7 @@ module RateLimit =
         let hist =
             state.history
             |> Map.tryFind ip
-            |> Option.defaultValue Seq.empty
+            |> Option.Recover Seq.empty
             |> Seq.Appending now
             |> Seq.filter (fun d -> d <= now + limit.timer)
             |> flip (Map.add ip) state.history

@@ -99,4 +99,4 @@ module Auth =
                         | false -> AuthState.Unauthorized
                 return auth
             }
-        state |> Option.defaultValue AuthState.Unauthenticated
+        state |> Option.Recover AuthState.Unauthenticated
