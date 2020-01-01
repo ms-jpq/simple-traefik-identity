@@ -15,8 +15,7 @@ module Rewrite =
                 async {
                     let req = ctx.Request
                     let conn = ctx.Connection
-                    let headers, _ = Exts.Metadata req
-                    let find = flip Map.tryFind headers
+                    let find = Exts.Headers req |> flip Map.tryFind
 
                     conn.RemoteIpAddress <-
                         find "X-Forwarded-For"

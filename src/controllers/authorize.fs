@@ -55,10 +55,9 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let domain = req.Host |> string
-            let _, cookies = Exts.Metadata req
 
             let authStatus =
-                cookies
+                Exts.Cookies req
                 |> Map.tryFind cname
                 |> Option.Recover ""
                 |> checkAuth deps.Boxed.jwt domain

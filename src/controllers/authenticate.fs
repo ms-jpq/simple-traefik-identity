@@ -51,31 +51,24 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
 
     let render authState (req: HttpRequest) =
-        let logout = deps.Boxed.logoutUri
         let uri = req.GetDisplayUrl() |> string
         let info = sprintf "%A - %A" uri authState
         let code = authState |> LanguagePrimitives.EnumToValue
-        let branch = logout.Host = req.Host.ToString() && logout.LocalPath = req.Path.ToString()
 
-        match (branch, authState) with
-        | true, AuthState.Authorized ->
+        match (authState) with
+        | AuthState.Authorized ->
             async {
                 let! html = Logout.Render deps.Boxed.display
                 logger.LogInformation info
                 return html, StatusCodes.Status418ImATeapot
             }
-        | _, AuthState.Authorized ->
-            async {
-                logger.LogInformation info
-                return "", code
-            }
-        | _, AuthState.Unauthorized ->
+        | AuthState.Unauthorized ->
             async {
                 logger.LogWarning info
                 let! html = "" |> Unauthorized.Render deps.Boxed.display
                 return html, code
             }
-        | _, AuthState.Unauthenticated
+        | AuthState.Unauthenticated
         | _ ->
             async {
                 logger.LogWarning info
@@ -89,9 +82,13 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            let _, cookies = Exts.Metadata self.HttpContext.Request
             let host = req.Host |> string
-            let authState = checkAuth jOpts cOpts host cookies
+
+            let authState =
+                Exts.Cookies self.HttpContext.Request
+                |> Map.tryFind cOpts.name
+                |> Option.Recover ""
+                |> checkAuth jOpts host
 
             let! html, code = render authState req
             resp.StatusCode <- code
@@ -121,8 +118,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let go, ns =
                 conn.RemoteIpAddress
                 |> string
-                |> next deps.Boxed.rateLimit st
-            do! state.Put(ns) |> Async.Ignore
+                |> next deps.Boxed.rateLimit st.history
+
+            let s2 = { history = ns }
+            do! state.Put(s2) |> Async.Ignore
 
             match (go, token) with
             | (true, Some tkn) ->
@@ -149,7 +148,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         async {
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
-            resp.StatusCode <- StatusCodes.Status418ImATeapot
 
             let uri = req.GetDisplayUrl() |> string
 

@@ -26,5 +26,6 @@ module RateLimit =
             hist
             |> Seq.Appending now
             |> Seq.filter (fun d -> d > ago)
+            |> flip (Map.add ip) history
 
         go, next
