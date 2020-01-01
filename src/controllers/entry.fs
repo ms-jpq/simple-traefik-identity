@@ -80,12 +80,10 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let render authState (req: HttpRequest) =
         let logout = deps.Boxed.logoutUri
-        let host = req.Host |> ToString
-        let path = req.Path |> ToString
         let uri = req.GetDisplayUrl() |> ToString
         let info = sprintf "%A - %A" uri authState
         let code = authState |> LanguagePrimitives.EnumToValue
-        let branch = logout.Host = host && logout.LocalPath = path
+        let branch = logout.Host = req.Host.ToString() && logout.LocalPath = req.Path.ToString()
 
         match (branch, authState) with
         | true, AuthState.Authorized ->
@@ -143,25 +141,24 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let uri = req.GetDisplayUrl() |> ToString
             let token = credentials |> findToken
 
-            let remote =
+            let policy =
+                req.Host
+                |> ToString
+                |> cookiePolicy
+
+            let! st = state.Get()
+            let go, ns =
                 headers
                 |> Map.tryFind deps.Boxed.rateLimit.header
                 |> Option.map ToString
                 |> Option.defaultValue (conn.RemoteIpAddress.ToString())
-
-            let! st = state.Get()
-            let go, ns = next deps.Boxed.rateLimit st remote
+                |> next deps.Boxed.rateLimit st
             do! state.Put(ns) |> Async.Ignore
 
             match (go, token) with
             | (true, Some tkn) ->
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
-
-                let policy =
-                    req.Host
-                    |> ToString
-                    |> cookiePolicy
 
                 resp.Cookies.Append(cOpts.name, tkn, policy)
                 logger.LogWarning info

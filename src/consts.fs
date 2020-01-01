@@ -9,9 +9,9 @@ module Consts =
 
     let CONTENTROOT = Directory.GetCurrentDirectory()
 
-    let CONFFILE = CONTENTROOT + "/config/conf.yml"
+    let CONFFILE = Path.Combine(CONTENTROOT, "config", "conf.yml")
 
-    let RESOURCESDIR = CONTENTROOT + "/views/"
+    let RESOURCESDIR = Path.Combine(CONTENTROOT, "views/")
 
     let BACKGROUND = "/assets/xp.jpg"
 
