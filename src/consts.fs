@@ -9,6 +9,8 @@ module Consts =
 
     let CONTENTROOT = Directory.GetCurrentDirectory()
 
+    let APPCONF = "STI_CONF"
+
     let CONFFILE = Path.Combine(CONTENTROOT, "config", "conf.yml")
 
     let RESOURCESDIR = Path.Combine(CONTENTROOT, "views/")

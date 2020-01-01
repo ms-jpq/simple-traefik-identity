@@ -58,7 +58,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Path <- "/"
         policy.Domain <-
-            deps.Boxed.model.domains
+            deps.Boxed.model.baseDomains
             |> Seq.tryFind (fun d -> domain.EndsWith(d))
             |> Option.defaultValue domain
 

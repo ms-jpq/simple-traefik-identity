@@ -62,7 +62,7 @@ module Server =
     let private confWebhost (deps: Variables) gloabls (webhost: IWebHostBuilder) =
         webhost.UseWebRoot(RESOURCESDIR) |> ignore
         webhost.UseKestrel() |> ignore
-        webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.port) |> ignore
+        webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.sys.port) |> ignore
         webhost.ConfigureServices(confServices deps gloabls) |> ignore
         webhost.Configure(Action<IApplicationBuilder>(confApp (PathString "/"))) |> ignore
 
@@ -70,6 +70,6 @@ module Server =
     let Build<'D> (deps: Variables) (globals: GlobalVar<'D>) =
         let host = Host.CreateDefaultBuilder()
         host.UseContentRoot(CONTENTROOT) |> ignore
-        host.ConfigureLogging(confLogging deps.logLevel) |> ignore
+        host.ConfigureLogging(confLogging deps.sys.logLevel) |> ignore
         host.ConfigureWebHostDefaults(Action<IWebHostBuilder>(confWebhost deps globals)) |> ignore
         host.Build()

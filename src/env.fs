@@ -62,6 +62,11 @@ module Env =
             let resolve (get: Decode.IGetters) =
                 let secret = get.Required.Field "secret" Decode.string |> Encoding.UTF8.GetBytes
                 let lifespan = get.Optional.Field "life_span" Decode.timespan |> Option.Recover TOKENLIFESPAN
+
+                match secret.Length with
+                | l when l <= 150 -> failwith "☢️ -- PICK A LONGER SECRET -- ☢️"
+                | _ -> ()
+
                 { secret = secret
                   lifespan = lifespan
                   issuer = TOKENISSUER }
@@ -229,7 +234,7 @@ module Env =
             |> Decode.fromString Variables.Decoder
             |> Result.mapError Exception
         ENV()
-        |> Map.tryFind "STI_CONF"
+        |> Map.tryFind APPCONF
         |> Option.defaultValue CONFFILE
         |> slurp
         |> Async.RunSynchronously
