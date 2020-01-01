@@ -13,10 +13,6 @@ module Consts =
 
     let RESOURCESDIR = Path.Combine(CONTENTROOT, "views/")
 
-    let BACKGROUND = "/assets/xp.jpg"
-
-    let ENVPREFIX = "STI"
-
     let private readme =
         sprintf """
 Simple Traefik Identity (STI)
@@ -32,18 +28,18 @@ https://ms-jpq.github.io/simple-traefik-identity/
 
     let DEFAULTTITLE = "Simple Traefik Identity"
 
+    let BACKGROUND = "/assets/xp.jpg"
+
     let COOKIENAME = "_sti_jwt"
 
     let COOKIEMAXAGE = TimeSpan.FromDays(4200.0)
 
     let TOKENISSUER = "STI"
 
-    let TOKENAUDIENCE = "STI"
-
     let TOKENLIFESPAN = TimeSpan.FromHours(24.0)
 
     let REMOTEADDR = "X-Forwarded-For"
 
-    let RATELIMIT = TimeSpan.FromSeconds(5.0)
+    let RATETIMER = TimeSpan.FromSeconds(30.0)
 
     let RATE = 5

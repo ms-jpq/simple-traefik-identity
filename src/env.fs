@@ -3,25 +3,71 @@ namespace STI
 
 open DomainAgnostic
 open Consts
-open Legivel.Serialization
 open Microsoft.Extensions.Logging
 open System
-open System.IO
+open Thoth.Json.Net
+open YamlDotNet.Serialization
 open System.Text
 
 
-
 module Env =
+
+    type SysOpts =
+        { logLevel: LogLevel
+          port: int }
+
+        static member Def =
+            { logLevel = LogLevel.Warning
+              port = WEBSRVPORT }
+
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let logLevel =
+                    get.Optional.Field "log_level" Decode.string
+                    |> Option.bind Parse.Enum<LogLevel>
+                    |> Option.Recover SysOpts.Def.logLevel
+
+                let port = get.Optional.Field "port" Decode.int |> Option.Recover SysOpts.Def.port
+                { logLevel = logLevel
+                  port = port }
+
+            Decode.object resolve
+
 
     type CookieOpts =
         { name: string
           maxAge: TimeSpan }
 
+        static member Def =
+            { name = COOKIENAME
+              maxAge = COOKIEMAXAGE }
+
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let name = get.Optional.Field "name" Decode.string |> Option.Recover CookieOpts.Def.name
+
+                let maxAge = get.Optional.Field "max_age" Decode.timespan |> Option.Recover CookieOpts.Def.maxAge
+                { name = name
+                  maxAge = maxAge }
+
+            Decode.object resolve
+
+
     type JWTopts =
         { secret: byte array
-          issuer: string
-          audience: string
-          lifespan: TimeSpan }
+          lifespan: TimeSpan
+          issuer: string }
+
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let secret = get.Required.Field "secret" Decode.string |> Encoding.UTF8.GetBytes
+                let lifespan = get.Optional.Field "life_span" Decode.timespan |> Option.Recover TOKENLIFESPAN
+                { secret = secret
+                  lifespan = lifespan
+                  issuer = TOKENISSUER }
+
+            Decode.object resolve
+
 
     type Domains =
         | Named of string seq
@@ -33,274 +79,160 @@ module Env =
           subDomains: Domains }
 
     type AuthModel =
-        { domains: string seq
+        { baseDomains: string seq
           users: User seq }
+
+        static member Decoder =
+            let pDomain acc curr =
+                match (acc, curr) with
+                | _, "*" -> All
+                | All, _ -> All
+                | Named a, c -> a ++ [ c ] |> Named
+
+            let resovleG (get: Decode.IGetters) =
+                let name = get.Required.Field "name" Decode.string
+
+                let subDomains = get.Required.Field "sub_domains" (Decode.list Decode.string) |> Seq.ofList
+
+                name, subDomains
+
+            let resovleU (groups: (string * string seq) seq) (get: Decode.IGetters) =
+                let name = get.Required.Field "name" Decode.string
+                let password = get.Required.Field "password" Decode.string
+
+                let chk =
+                    get.Required.Field "groups" (Decode.list Decode.string)
+                    |> Set
+                    |> flip Set.contains
+
+                let subDomains =
+                    groups
+                    |> Seq.filter (fst >> chk)
+                    |> Seq.Bind snd
+                    |> Seq.fold pDomain (Named Seq.empty)
+
+                { name = name
+                  password = password
+                  subDomains = subDomains }
+
+            let resolve (get: Decode.IGetters) =
+                let baseDomains =
+                    get.Optional.Field "base_domains" (Decode.list Decode.string)
+                    |> Option.Recover []
+                    |> Seq.ofList
+
+                let groups =
+                    get.Required.Field "groups"
+                        (resovleG
+                         |> Decode.object
+                         |> Decode.list) |> Seq.ofList
+                let users =
+                    get.Required.Field "users"
+                        (groups
+                         |> resovleU
+                         |> Decode.object
+                         |> Decode.list) |> Seq.ofList
+                { baseDomains = baseDomains
+                  users = users }
+
+            Decode.object resolve
+
 
     type RateLimit =
         { header: string
           rate: int
           timer: TimeSpan }
 
+        static member Def =
+            { header = REMOTEADDR
+              rate = RATE
+              timer = RATETIMER }
+
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let header = get.Optional.Field "header" Decode.string |> Option.Recover RateLimit.Def.header
+                let rate = get.Optional.Field "rate" Decode.int |> Option.Recover RateLimit.Def.rate
+                let timer = get.Optional.Field "timer" Decode.timespan |> Option.Recover RateLimit.Def.timer
+                { header = header
+                  rate = rate
+                  timer = timer }
+
+            Decode.object resolve
+
+
     type Display =
         { resources: string
           title: string
           background: string }
 
+        static member Def =
+            { resources = RESOURCESDIR
+              title = DEFAULTTITLE
+              background = BACKGROUND }
+
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let title = get.Optional.Field "title" Decode.string |> Option.Recover Display.Def.title
+                let background =
+                    get.Optional.Field "background" Decode.string |> Option.Recover Display.Def.background
+                { resources = Display.Def.resources
+                  title = title
+                  background = background }
+
+            Decode.object resolve
+
+
     type Variables =
-        { logLevel: LogLevel
-          port: int
-          model: AuthModel
+        { sys: SysOpts
           cookie: CookieOpts
           jwt: JWTopts
+          model: AuthModel
           logoutUri: Uri
           rateLimit: RateLimit
           display: Display }
 
-    type RawGroup =
-        { name: string
-          subDomains: string list }
-        static member Identity a b = a.name = b.name
+        static member Decoder =
+            let resolve (get: Decode.IGetters) =
+                let sys = get.Optional.Field "sys" SysOpts.Decoder |> Option.Recover SysOpts.Def
+                let cookie = get.Optional.Field "cookie" CookieOpts.Decoder |> Option.Recover CookieOpts.Def
+                let jwt = get.Required.Field "jwt" JWTopts.Decoder
+                let model = get.Required.Field "auth" AuthModel.Decoder
 
-    type RawUser =
-        { name: string
-          password: string
-          groups: string list }
-        static member Identity a b = a.name = b.name
+                let logoutUri =
+                    get.Optional.Field "logout_uri" Decode.string
+                    |> Option.bind Parse.Uri
+                    |> Option.Recover(Uri("about:blank"))
 
-    type ConfYaml =
-        { loglevel: string option
-          port: int option
-          secret: string option
-          domains: string list option
-          groups: RawGroup list option
-          users: RawUser list option
-          logoutUri: string option
-          ipHeader: string option
-          rateLimit: int option
-          title: string option
-          background: string option }
+                let rateLimit = get.Optional.Field "rate_limit" RateLimit.Decoder |> Option.Recover RateLimit.Def
+                let display = get.Optional.Field "display" Display.Decoder |> Option.Recover Display.Def
 
-
-    let private prefix = sprintf "%s_%s" ENVPREFIX
+                { sys = sys
+                  cookie = cookie
+                  jwt = jwt
+                  model = model
+                  logoutUri = logoutUri
+                  rateLimit = rateLimit
+                  display = display }
+            Decode.object resolve
 
 
-    let private required name =
-        let err =
-            sprintf "\n\n\n-- MISSING ENVIRONMENTAL VARIABLE :: [%s] --\n\n\n" (prefix name)
-        err |> Option.ForceUnwrap
 
-
-    let private pYaml conf =
-        let def =
-            { loglevel = None
-              port = None
-              secret = None
-              domains = None
-              groups = None
-              users = None
-              logoutUri = None
-              rateLimit = None
-              ipHeader = None
-              title = None
-              background = None }
-
-        let mapSucc res =
-            match res with
-            | Success s -> Some s.Data
-            | Error _ -> None
-
-        let parse yml =
-            yml
-            |> DeserializeWithOptions<ConfYaml> [ MappingMode(MapYaml.WithCrossCheck) ]
-            |> Seq.choose mapSucc
-            |> Seq.tryHead
-
-        match File.Exists conf with
-        | false -> None
-        | true -> File.ReadAllText conf |> parse
-        |> Option.defaultValue def
-
-
-    let private pLog find =
-        find (prefix "LOG_LEVEL")
-        |> Option.bind Parse.Enum<LogLevel>
-        |> Option.Recover LogLevel.Warning
-
-
-    let private pPort find =
-        find (prefix "PORT")
-        |> Option.bind Parse.Int
-        |> Option.Recover WEBSRVPORT
-
-
-    let private pDomain find =
-        find (prefix "DOMAINS")
-        |> Option.map (fun (d: string) -> d.Split(";"))
-        |> Option.map Seq.ofArray
-        |> Option.defaultValue Seq.empty
-
-
-    let private pSecret find = find (prefix "SECRET")
-
-    let private pGroup (group: string) =
-        match group.Split(":") |> List.ofArray with
-        | [ name; domains ] ->
-            { name = name
-              subDomains = domains.Split(",") |> List.ofArray }
-            |> Some
-        | _ -> None
-
-    let private pGroups find =
-        find (prefix "GROUPS")
-        |> Option.map (fun (g: string) -> g.Split(";"))
-        |> Option.defaultValue [||]
-        |> Seq.ofArray
-        |> Seq.choose pGroup
-
-
-    let private pUser (user: string) =
-        match user.Split(":") |> List.ofArray with
-        | [ name; password; groups ] ->
-            { name = name
-              password = password
-              groups = groups.Split(",") |> List.ofArray }
-            |> Some
-        | _ -> None
-
-    let private pUsers find =
-        find (prefix "USERS")
-        |> Option.map (fun (u: string) -> u.Split(";"))
-        |> Option.defaultValue [||]
-        |> Seq.ofArray
-        |> Seq.choose pUser
-
-    let private pLogout find = find (prefix "LOG_OUT")
-
-    let private pRate find =
-        find (prefix "RATE_LIMIT")
-        |> Option.bind Parse.Int
-        |> Option.defaultValue RATE
-
-    let private pipHeader find = find (prefix "IP_HEADEER") |> Option.defaultValue REMOTEADDR
-
-    let private pBackground find = find (prefix "BACKGROUND") |> Option.defaultValue BACKGROUND
-
-    let private pTitle find = find (prefix "TITLE") |> Option.defaultValue DEFAULTTITLE
-
-
-    let private pmodel (groups: RawGroup seq) (users: RawUser seq) =
-        let pDomain acc curr =
-            match (acc, curr) with
-            | _, "*" -> All
-            | All, _ -> All
-            | Named a, c -> a ++ [ c ] |> Named
-
-        let mkUser (user: RawUser) =
-            let chk =
-                user.groups
-                |> Set
-                |> flip Set.contains
-
-            let domains =
-                groups
-                |> Seq.filter (fun g -> chk g.name)
-                |> Seq.Bind(fun g -> g.subDomains |> Seq.ofList)
-                |> Seq.fold pDomain (Named Seq.empty)
-
-            { name = user.name
-              password = user.password
-              subDomains = domains }
-
-        users |> Seq.map mkUser
+    let Y2J(yaml: string) =
+        yaml
+        |> DeserializerBuilder().Build().Deserialize
+        |> SerializerBuilder().JsonCompatible().Build().Serialize
 
 
     let Opts() =
-        let find = ENV() |> flip Map.tryFind
-        let yaml = find (prefix "CONF_FILE") |> Option.defaultValue CONFFILE
-        let ymlConf = pYaml yaml
-
-        let log =
-            ymlConf.loglevel
-            |> Option.bind Parse.Enum<LogLevel>
-            |> Option.defaultValue (pLog find)
-
-        let port = ymlConf.port |> Option.defaultValue (pPort find)
-
-        let g =
-            ymlConf.groups
-            |> Option.defaultValue []
-            |> Seq.ofList
-            |> (++) (pGroups find)
-
-        let u =
-            ymlConf.users
-            |> Option.defaultValue []
-            |> Seq.ofList
-            |> (++) (pUsers find)
-
-        let users = pmodel g u
-
-        let domains =
-            ymlConf.domains
-            |> Option.defaultValue []
-            |> Seq.ofList
-            |> (++) (pDomain find)
-
-        let secret =
-            match (ymlConf.secret, pSecret find) with
-            | Some s1, _ -> s1
-            | _, Some s2 -> s2
-            | _ -> sprintf "Did not find |SECRET| in either ENVIRONMENT or %s" yaml |> failwith
-            |> Encoding.UTF8.GetBytes
-
-        match secret.Length with
-        | x when x < 128 -> failwith "Secret not long enough!"
-        | _ -> ()
-
-        let model =
-            { domains = domains
-              users = users }
-
-        let cookie =
-            { name = COOKIENAME
-              maxAge = COOKIEMAXAGE }
-
-        let jwt =
-            { secret = secret
-              issuer = TOKENISSUER
-              audience = TOKENAUDIENCE
-              lifespan = TOKENLIFESPAN }
-
-        let logout =
-            match (ymlConf.logoutUri, pLogout find) with
-            | Some uri, _ -> Some uri
-            | _, Some uri -> Some uri
-            | _, _ -> None
-            |> Option.bind Parse.Uri
-            |> Option.defaultValue (Uri("about:blank"))
-
-        let ipHeader = ymlConf.ipHeader |> Option.defaultValue (pipHeader find)
-        let rate = ymlConf.rateLimit |> Option.defaultValue (pRate find)
-
-        let rateLimit =
-            { header = ipHeader
-              timer = RATELIMIT
-              rate = rate }
-
-        let title = ymlConf.title |> Option.defaultValue (pTitle find)
-
-        let background = ymlConf.background |> Option.defaultValue (pBackground find)
-
-        let display =
-            { resources = RESOURCESDIR
-              title = title
-              background = background }
-
-        { logLevel = log
-          port = port
-          model = model
-          cookie = cookie
-          jwt = jwt
-          logoutUri = logout
-          rateLimit = rateLimit
-          display = display }
+        let code s =
+            s
+            |> Decode.fromString Variables.Decoder
+            |> Result.mapError Exception
+        ENV()
+        |> Map.tryFind "STI_CONF"
+        |> Option.defaultValue CONFFILE
+        |> slurp
+        |> Async.RunSynchronously
+        |> Result.bind (Result.New Y2J)
+        |> Result.bind code
+        |> Result.ForceUnwrap

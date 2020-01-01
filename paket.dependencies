@@ -1,7 +1,8 @@
 source https://api.nuget.org/v3/index.json
 
 nuget FSharp.Core
-nuget Legivel
+nuget Thoth.Json.Net
+nuget YamlDotnet
 nuget System.IdentityModel.Tokens.Jwt
 
 

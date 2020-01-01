@@ -13,8 +13,8 @@ module Layout =
     let Load resources resource =
         resource
         |> sprintf "%s%s" resources
-        |> File.ReadAllTextAsync
-        |> Async.AwaitTask
+        |> slurp
+        |> Async.Map (Result.Recover "")
 
     let Layout js css background tit form =
         html []
