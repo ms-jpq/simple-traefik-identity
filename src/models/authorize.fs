@@ -15,23 +15,18 @@ module Authorize =
         | Authorized = 203
 
 
-    let checkAuth jopts (copts: CookieOpts) domain cookies =
+    let checkAuth jopts (domain: string) cookie =
         let state =
             maybe {
-                let! claims = cookies
-                              |> Map.tryFind copts.name
-                              |> Option.bind (readJWT jopts)
+                let! claims = cookie |> readJWT jopts
 
                 let! model = JwtClaim.DeSerialize claims
                 let auth =
                     match model.access with
                     | All -> AuthState.Authorized
-                    | Named lst ->
-                        let chk =
-                            lst
-                            |> Set
-                            |> flip Set.contains
-                        match chk domain with
+                    | Named domains ->
+                        let contains = domains |> Seq.Contains(fun d -> domain.EndsWith(d))
+                        match contains with
                         | true -> AuthState.Authorized
                         | false -> AuthState.Unauthorized
                 return auth

@@ -6,6 +6,7 @@ open STI.Models.Authorize
 open STI.Models.RateLimit
 open STI.State
 open STI.Views
+open STI.Consts
 open DomainAgnostic
 open DomainAgnostic.Globals
 open DotNetExtensions
@@ -15,7 +16,6 @@ open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Http.Extensions
 open Microsoft.Extensions.Logging
 open System
-open System.Text
 
 
 module Ingress =
@@ -29,7 +29,8 @@ module Ingress =
 open Ingress
 
 
-[<Route("")>]
+[<Controller>]
+[<Port(WEBSRVPORT)>]
 type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
@@ -42,7 +43,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         policy.MaxAge <- cOpts.maxAge |> Nullable
         policy.Path <- "/"
         policy.Domain <-
-            deps.Boxed.model.baseDomains
+            model.baseDomains
             |> Seq.tryFind (fun d -> domain.EndsWith(d))
             |> Option.Recover domain
 
@@ -83,7 +84,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             }
 
 
-    [<HttpGet("{*.}")>]
+    [<HttpGet("")>]
     member self.Index() =
         async {
             let req = self.HttpContext.Request
@@ -99,8 +100,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
-    [<HttpHeader("STI-Authorization")>]
+    [<HttpPost("/authenticate")>]
     member self.Login(credentials: LoginHeaders) =
         async {
             let req = self.HttpContext.Request
@@ -144,8 +144,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
-    [<HttpHeader("STI-Deauthorization")>]
+    [<HttpPost("/deauthenticate")>]
     member self.Logout() =
         async {
             let req = self.HttpContext.Request

@@ -8,12 +8,12 @@ open System
 
 module RateLimit =
 
-    let next limit state ip =
+    let next limit history ip =
         let now = DateTime.UtcNow
         let ago = now - limit.timer
 
         let hist =
-            state.history
+            history
             |> Map.tryFind ip
             |> Option.Recover Seq.empty
 
@@ -26,6 +26,5 @@ module RateLimit =
             hist
             |> Seq.Appending now
             |> Seq.filter (fun d -> d > ago)
-            |> flip (Map.add ip) state.history
 
-        go, { history = next }
+        go, next

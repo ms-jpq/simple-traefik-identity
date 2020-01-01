@@ -13,12 +13,9 @@ open System.Text
 module Env =
 
     type SysOpts =
-        { logLevel: LogLevel
-          port: int }
+        { logLevel: LogLevel }
 
-        static member Def =
-            { logLevel = LogLevel.Warning
-              port = WEBSRVPORT }
+        static member Def = { logLevel = LogLevel.Warning }
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
@@ -27,9 +24,9 @@ module Env =
                     |> Option.bind Parse.Enum<LogLevel>
                     |> Option.Recover SysOpts.Def.logLevel
 
-                let port = get.Optional.Field "port" Decode.int |> Option.Recover SysOpts.Def.port
-                { logLevel = logLevel
-                  port = port }
+
+
+                { logLevel = logLevel }
 
             Decode.object resolve
 
@@ -202,34 +199,33 @@ module Env =
 
 
     type Variables =
-        { sys: SysOpts
+        { baseuri: Uri
+          sys: SysOpts
           cookie: CookieOpts
           jwt: JWTopts
           model: AuthModel
-          logoutUri: Uri
           rateLimit: RateLimit
           display: Display }
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
+                let baseuri =
+                    get.Required.Field "base_uri" Decode.string
+                    |> Parse.Uri
+                    |> Option.ForceUnwrap "Failed to parse uri"
+
                 let sys = get.Optional.Field "sys" SysOpts.Decoder |> Option.Recover SysOpts.Def
                 let cookie = get.Optional.Field "cookie" CookieOpts.Decoder |> Option.Recover CookieOpts.Def
                 let jwt = get.Required.Field "jwt" JWTopts.Decoder
                 let model = get.Required.Field "auth" AuthModel.Decoder
-
-                let logoutUri =
-                    get.Optional.Field "logout_uri" Decode.string
-                    |> Option.bind Parse.Uri
-                    |> Option.Recover(Uri("about:blank"))
-
                 let rateLimit = get.Optional.Field "rate_limit" RateLimit.Decoder |> Option.Recover RateLimit.Def
                 let display = get.Optional.Field "display" Display.Decoder |> Option.Recover Display.Def
 
-                { sys = sys
+                { baseuri = baseuri
+                  sys = sys
                   cookie = cookie
                   jwt = jwt
                   model = model
-                  logoutUri = logoutUri
                   rateLimit = rateLimit
                   display = display }
             Decode.object resolve

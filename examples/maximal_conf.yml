@@ -1,6 +1,6 @@
 sys:
   log_level: WARN
-  port: 8080
+
 
 jwt:
   lifespan: 24 # Hours, How long you have before you need to login again
@@ -23,8 +23,8 @@ jwt:
 
     O Canada, we stand on guard for thee.
 
-# Visit this URI to logout
-logout_uri: https://services.canada.ca/logout/
+# TODO -- FILL ME IN
+base_uri: https://services.gc.ca
 
 auth:
   # Set this for your base level domain

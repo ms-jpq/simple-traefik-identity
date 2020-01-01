@@ -26,14 +26,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/middlewares/rewrite.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/middlewares/preauth.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/pages/layout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/logout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/unauthorized.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/controllers/entry.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/controllers/authorize.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/controllers/authenticate.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/server.fs" />
   </ItemGroup>
   <ItemGroup>

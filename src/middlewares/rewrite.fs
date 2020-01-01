@@ -8,7 +8,7 @@ open System.Net
 
 module Rewrite =
 
-    type RewriteMiddleware(next: RequestDelegate, deps: Container<Variables>) =
+    type RewriteMiddleware(next: RequestDelegate) =
 
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
@@ -19,7 +19,7 @@ module Rewrite =
                     let find = flip Map.tryFind headers
 
                     conn.RemoteIpAddress <-
-                        find deps.Boxed.rateLimit.header
+                        find "X-Forwarded-For"
                         |> Option.map string
                         |> Option.bind ((Result.New IPAddress.Parse) >> Option.OfResult)
                         |> Option.Recover conn.RemoteIpAddress
