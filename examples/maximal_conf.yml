@@ -1,4 +1,12 @@
+sys:
+  log_level: WARN
+  port: 8080
+
 jwt:
+  lifespan: 24 # Hours, How long you have before you need to login again
+  issuer: SUPER_STI
+  # You need a long secret
+  # Too short and STI will not work
   secret: |-
     O Canada!
     Our home and native land!
@@ -15,13 +23,58 @@ jwt:
 
     O Canada, we stand on guard for thee.
 
+# Visit this URI to logout
+logout_uri: https://services.canada.ca/logout/
+
 auth:
+  # Set this for your base level domain
+  # So you can avoid login for each subdomain
+  base_domains:
+    - canada.ca
+    - nu.ca
+
   groups:
     - name: quebec
       sub_domains:
         - "*"
+    - name: saskatchewan
+      sub_domains:
+        # ALL subdomains for canada.ca
+        # ie. *.canada.ca
+        - canada.ca
+        - www.tourismnewbrunswick.ca
+    - name: newfoundland
+      sub_domains:
+        - www.gov.nu.ca
+
   users:
+    # Yukon has access to all the gucci
     - name: yukon
       password: yukon
       groups:
         - quebec
+    # nunavut has access to
+    # - *.canada.ca
+    # - www.tourismnewbrunswick.ca
+    # - www.gov.nu.ca
+    - name: nunavut
+      password: nunavut
+      groups:
+        - saskatchewan
+        - newfoundland
+
+# Kind of like Fail2Ban
+# Default is 5 requests / 30s
+rate_limit:
+  # Use Cf-Connecting-Ip if Cloudflare, and so on
+  # Defaults to X-Forwarded-For (No reverse proxies beyond Traefik)
+  header: Cf-Connecting-Ip
+  rate: 5
+  timer: 30
+
+display:
+  # Site title when you login / out
+  title: Simple Traefik Identity
+  # Any valid image uri works
+  background: |-
+    https://github.com/ms-jpq/simple-traefik-identity/raw/master/src/views/assets/xp.jpg

@@ -1,11 +1,11 @@
 namespace STI.Controllers
 
-open STI
 open STI.Env
-open STI.Auth
+open STI.Models.Authenticate
+open STI.Models.Authorize
+open STI.Models.RateLimit
 open STI.State
 open STI.Views
-open STI.RateLimit
 open DomainAgnostic
 open DomainAgnostic.Globals
 open DotNetExtensions
@@ -25,23 +25,6 @@ module Ingress =
         { [<FromHeader(Name = "STI-Authorization")>]
           authorization: string }
 
-        static member Decode headers =
-            try
-                let credentials = headers.authorization.Split(" ")
-                if credentials.[0] <> "Basic" then failwith "..."
-
-                let decoded =
-                    credentials.[1]
-                    |> Convert.FromBase64String
-                    |> Encoding.UTF8.GetString
-                    |> fun s -> s.Split(":")
-
-                let username = decoded.[0]
-                let password = decoded.[1]
-                (username, password) |> Some
-
-            with _ -> None
-
 
 open Ingress
 
@@ -52,6 +35,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
+    let model = deps.Boxed.model
 
     let cookiePolicy (domain: string) =
         let policy = CookieOptions()
@@ -63,19 +47,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             |> Option.Recover domain
 
         policy
-
-
-    let login username password =
-        let seek (u: User) = u.name = username && u.password = password
-        deps.Boxed.model.users |> Seq.tryFind seek
-
-    let findToken credentials =
-        credentials
-        |> LoginHeaders.Decode
-        |> Option.bind ((<||) login)
-        |> Option.map (fun u -> { access = u.subDomains })
-        |> Option.map JwtClaim.Serialize
-        |> Option.map (newJWT jOpts)
 
 
     let render authState (req: HttpRequest) =
@@ -137,9 +108,9 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let conn = self.HttpContext.Connection
             resp.StatusCode <- StatusCodes.Status418ImATeapot
 
-            let headers, _ = Exts.Metadata req
+
             let uri = req.GetDisplayUrl() |> string
-            let token = credentials |> findToken
+            let token = credentials.authorization |> newToken jOpts model
 
             let policy =
                 req.Host
@@ -148,10 +119,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
             let! st = state.Get()
             let go, ns =
-                headers
-                |> Map.tryFind deps.Boxed.rateLimit.header
-                |> Option.map string
-                |> Option.Recover(conn.RemoteIpAddress.ToString())
+                conn.RemoteIpAddress
+                |> string
                 |> next deps.Boxed.rateLimit st
             do! state.Put(ns) |> Async.Ignore
 
@@ -162,7 +131,8 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
 
                 resp.Cookies.Append(cOpts.name, tkn, policy)
                 logger.LogWarning info
-                return {| ok = true |} |> JsonResult :> ActionResult
+                return {| ok = true
+                          go = true |} |> JsonResult :> ActionResult
             | _ ->
                 let info =
                     sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri

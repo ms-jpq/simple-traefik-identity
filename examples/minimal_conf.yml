@@ -1,4 +1,6 @@
 jwt:
+  # You need a long secret
+  # Too short and STI will not work
   secret: |-
     O Canada!
     Our home and native land!
@@ -16,11 +18,19 @@ jwt:
     O Canada, we stand on guard for thee.
 
 auth:
+  # Set this for your base level domain
+  # So you can avoid login for each subdomain
+  # not required tho
+  base_domains:
+    - gc.ca
+
   groups:
     - name: quebec
       sub_domains:
         - "*"
+
   users:
+    # Yukon has access to all the gucci
     - name: yukon
       password: yukon
       groups:

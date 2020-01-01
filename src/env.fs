@@ -46,7 +46,11 @@ module Env =
             let resolve (get: Decode.IGetters) =
                 let name = get.Optional.Field "name" Decode.string |> Option.Recover CookieOpts.Def.name
 
-                let maxAge = get.Optional.Field "max_age" Decode.timespan |> Option.Recover CookieOpts.Def.maxAge
+                let maxAge =
+                    get.Optional.Field "max_age" Decode.string
+                    |> Option.bind Parse.Float
+                    |> Option.map TimeSpan.FromHours
+                    |> Option.Recover CookieOpts.Def.maxAge
                 { name = name
                   maxAge = maxAge }
 
@@ -61,7 +65,12 @@ module Env =
         static member Decoder =
             let resolve (get: Decode.IGetters) =
                 let secret = get.Required.Field "secret" Decode.string |> Encoding.UTF8.GetBytes
-                let lifespan = get.Optional.Field "life_span" Decode.timespan |> Option.Recover TOKENLIFESPAN
+
+                let lifespan =
+                    get.Optional.Field "lifespan" Decode.string
+                    |> Option.bind Parse.Float
+                    |> Option.map TimeSpan.FromHours
+                    |> Option.Recover TOKENLIFESPAN
 
                 match secret.Length with
                 | l when l <= 150 -> failwith "☢️ -- PICK A LONGER SECRET -- ☢️"
@@ -157,7 +166,12 @@ module Env =
             let resolve (get: Decode.IGetters) =
                 let header = get.Optional.Field "header" Decode.string |> Option.Recover RateLimit.Def.header
                 let rate = get.Optional.Field "rate" Decode.int |> Option.Recover RateLimit.Def.rate
-                let timer = get.Optional.Field "timer" Decode.timespan |> Option.Recover RateLimit.Def.timer
+
+                let timer =
+                    get.Optional.Field "timer" Decode.string
+                    |> Option.bind Parse.Float
+                    |> Option.map TimeSpan.FromSeconds
+                    |> Option.Recover RateLimit.Def.timer
                 { header = header
                   rate = rate
                   timer = timer }
@@ -235,8 +249,7 @@ module Env =
         |> slurp
         |> Async.RunSynchronously
         |> Result.bind (Result.New Y2J)
-        |> Result.mapError (constantly "☢️ -- Unable to load config -- ☢️")
+        |> Result.mapError string
         |> Result.bind (Decode.fromString Variables.Decoder)
-        |> Result.mapError (constantly "☢️ -- Unable to parse config -- ☢️")
         |> Result.mapError Exception
         |> Result.ForceUnwrap

@@ -2,7 +2,7 @@ namespace STI.Middlewares
 
 open STI
 open STI.Env
-open STI.Auth
+open STI.Models.Authorize
 open DomainAgnostic
 open DotNetExtensions
 open Microsoft.AspNetCore.Http
