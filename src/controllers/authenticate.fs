@@ -38,43 +38,28 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
     let jOpts = deps.Boxed.jwt
     let model = deps.Boxed.model
 
-    let cookiePolicy (domain: string) =
-        let policy = CookieOptions()
-        policy.MaxAge <- cOpts.maxAge |> Nullable
-        policy.Path <- "/"
-        policy.Domain <-
-            model.baseDomains
-            |> Seq.tryFind (fun d -> domain.EndsWith(d))
-            |> Option.Recover domain
 
-        policy
 
 
     let render authState (req: HttpRequest) =
         let uri = req.GetDisplayUrl() |> string
         let info = sprintf "%A - %A" uri authState
-        let code = authState |> LanguagePrimitives.EnumToValue
 
         match (authState) with
         | AuthState.Authorized ->
-            async {
-                let! html = Logout.Render deps.Boxed.display
-                logger.LogInformation info
-                return html, StatusCodes.Status418ImATeapot
-            }
+            let html = Logout.Render deps.Boxed.display
+            logger.LogInformation info
+            html
         | AuthState.Unauthorized ->
-            async {
-                logger.LogWarning info
-                let! html = "" |> Unauthorized.Render deps.Boxed.display
-                return html, code
-            }
+            logger.LogWarning info
+            let html = "" |> Unauthorized.Render deps.Boxed.display
+            html
         | AuthState.Unauthenticated
         | _ ->
-            async {
-                logger.LogWarning info
-                let! html = req.GetEncodedUrl() |> Login.Render deps.Boxed.display
-                return html, code
-            }
+            logger.LogWarning info
+            let html = req.GetEncodedUrl() |> Login.Render deps.Boxed.display
+            html
+
 
 
     [<HttpGet("")>]
@@ -90,8 +75,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 |> Option.Recover ""
                 |> checkAuth jOpts host
 
-            let! html, code = render authState req
-            resp.StatusCode <- code
+            let html = render authState req
             return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
@@ -109,11 +93,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let uri = req.GetDisplayUrl() |> string
             let token = credentials.authorization |> newToken jOpts model
 
-            let policy =
-                req.Host
-                |> string
-                |> cookiePolicy
-
             let! st = state.Get()
             let go, ns =
                 conn.RemoteIpAddress
@@ -128,7 +107,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
                 let info =
                     sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
 
-                resp.Cookies.Append(cOpts.name, tkn, policy)
                 logger.LogWarning info
                 return {| ok = true
                           go = true |} |> JsonResult :> ActionResult
@@ -154,12 +132,7 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let info =
                 sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
 
-            let policy =
-                req.Host
-                |> string
-                |> cookiePolicy
 
-            resp.Cookies.Delete(cOpts.name, policy)
             logger.LogWarning info
             return {| ok = true |} |> JsonResult :> ActionResult
         }

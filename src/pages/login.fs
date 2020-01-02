@@ -38,15 +38,7 @@ module Login =
           div [] [] ]
 
     let Render (display: Display) goto =
-        async {
-            let! _js = "js/login.js"
-                       |> Load display.resources
-                       |> Async.StartChild
-            let! _css = "css/login.css"
-                        |> Load display.resources
-                        |> Async.StartChild
-            let! js = _js
-            let! css = _css
-            let nodes = Layout js css display.background display.title (login goto)
-            return nodes |> renderHtmlDocument
-        }
+        let js = "js/login.js"
+        let css = "css/login.css"
+        let nodes = Layout js css display.background display.title (login goto)
+        nodes |> renderHtmlDocument

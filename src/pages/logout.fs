@@ -15,16 +15,8 @@ module Logout =
                   _value " " ] ]
 
 
-    let Render (display: Display) =
-        async {
-            let! _js = "js/logout.js"
-                       |> Load display.resources
-                       |> Async.StartChild
-            let! _css = "css/logout.css"
-                        |> Load display.resources
-                        |> Async.StartChild
-            let! js = _js
-            let! css = _css
-            let nodes = Layout js css display.background display.title [ logout ]
-            return nodes |> renderHtmlDocument
-        }
+    let Render(display: Display) =
+        let js = "js/logout.js"
+        let css = "css/logout.css"
+        let nodes = Layout js css display.background display.title [ logout ]
+        nodes |> renderHtmlDocument

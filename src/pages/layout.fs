@@ -10,12 +10,6 @@ module Layout =
 
     let _css = sprintf "body { background-image: url(%s); }"
 
-    let Load resources resource =
-        resource
-        |> sprintf "%s%s" resources
-        |> slurp
-        |> Async.Map (Result.Recover "")
-
     let Layout js css background tit form =
         html []
             [ head []
