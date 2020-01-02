@@ -31,14 +31,12 @@ open Ingress
 
 [<Controller>]
 [<Port(WEBSRVPORT)>]
-type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<State>) =
+type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
     let cOpts = deps.Boxed.cookie
     let jOpts = deps.Boxed.jwt
     let model = deps.Boxed.model
-
-
 
 
     let render authState (req: HttpRequest) =
@@ -87,7 +85,6 @@ type Entry(logger: ILogger<Entry>, deps: Container<Variables>, state: GlobalVar<
             let req = self.HttpContext.Request
             let resp = self.HttpContext.Response
             let conn = self.HttpContext.Connection
-            resp.StatusCode <- StatusCodes.Status418ImATeapot
 
 
             let uri = req.GetDisplayUrl() |> string

@@ -17,7 +17,7 @@ open System
 
 [<Controller>]
 [<Port(AUTHSRVPORT)>]
-type Entry(logger: ILogger<Entry>, deps: Container<Variables>) =
+type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
     inherit Controller()
 
 

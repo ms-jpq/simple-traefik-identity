@@ -3,6 +3,7 @@ namespace STI.Models
 open STI.Env
 open DomainAgnostic
 open Microsoft.IdentityModel.Tokens
+open Newtonsoft.Json
 open System
 open System.IdentityModel.Tokens.Jwt
 
@@ -12,28 +13,12 @@ module JWT =
     type JwtClaim =
         { access: Domains }
 
-        static member Serialize claim =
-            match claim.access with
-            | All -> [ "access", "*" ] |> Map.ofSeq
-            | Named lst ->
-                let access = String.Join(",", lst |> Seq.toArray)
-                [ "access", access ] |> Map.ofSeq
+        static member Serialize(claim: JwtClaim) = claim |> JsonConvert.SerializeObject
 
         static member DeSerialize claim =
-            maybe {
-                let! access = claim |> Map.tryFind "access"
-                let! res = match CAST<string> access with
-                           | Some "*" -> Some { access = All }
-                           | Some c ->
-                               let a =
-                                   c.Split(",")
-                                   |> Seq.ofArray
-                                   |> Named
-                               Some { access = a }
-                           | None -> None
-                return res
-            }
-
+            claim
+            |> Result.New JsonConvert.DeserializeObject<JwtClaim>
+            |> Option.OfResult
 
     let readJWT (opts: JWTopts) (token: string) =
         let jwt = JwtSecurityTokenHandler()
@@ -48,11 +33,12 @@ module JWT =
             jwt.ValidateToken(token, validation, ref null) |> ignore
             jwt.ReadJwtToken(token).Payload
             |> Map.OfKVP
-            |> Some
+            |> Map.tryFind "payload"
+            |> Option.bind CAST<string>
         with _ -> None
 
 
-    let newJWT (opts: JWTopts) claims =
+    let newJWT (opts: JWTopts) (payload: string) =
         let jwt = JwtSecurityTokenHandler()
         let now = DateTime.UtcNow
         let key = opts.secret |> SymmetricSecurityKey
@@ -67,7 +53,5 @@ module JWT =
             desc
 
         let token = jwt.CreateJwtSecurityToken(desc)
-        claims
-        |> Map.toSeq
-        |> Seq.iter token.Payload.Add
+        assert (token.Payload.TryAdd("payload", payload))
         jwt.WriteToken token
