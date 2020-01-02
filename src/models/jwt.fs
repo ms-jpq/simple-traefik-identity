@@ -3,22 +3,11 @@ namespace STI.Models
 open STI.Env
 open DomainAgnostic
 open Microsoft.IdentityModel.Tokens
-open Newtonsoft.Json
 open System
 open System.IdentityModel.Tokens.Jwt
 
 
 module JWT =
-
-    type JwtClaim =
-        { access: Domains }
-
-        static member Serialize(claim: JwtClaim) = claim |> JsonConvert.SerializeObject
-
-        static member DeSerialize claim =
-            claim
-            |> Result.New JsonConvert.DeserializeObject<JwtClaim>
-            |> Option.OfResult
 
     let readJWT (opts: JWTopts) (token: string) =
         let jwt = JwtSecurityTokenHandler()

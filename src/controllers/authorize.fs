@@ -3,7 +3,7 @@ namespace STI.Controllers
 open STI
 open STI.Env
 open STI.Consts
-open STI.Models.Authorize
+open STI.Models.Auth
 open DomainAgnostic
 open DomainAgnostic.Encode
 open DotNetExtensions

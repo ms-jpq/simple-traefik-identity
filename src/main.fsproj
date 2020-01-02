@@ -20,8 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/models/jwt.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/models/authenticate.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/models/authorize.fs" />
+    <Compile Include="$(MSBuildThisFileDirectory)/models/auth.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/models/ratelimit.fs" />
   </ItemGroup>
   <ItemGroup>

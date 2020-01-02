@@ -1,8 +1,7 @@
 namespace STI.Controllers
 
 open STI.Env
-open STI.Models.Authenticate
-open STI.Models.Authorize
+open STI.Models.Auth
 open STI.Models.RateLimit
 open STI.State
 open STI.Views
