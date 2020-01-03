@@ -35,3 +35,9 @@ Simple & Configurable -- SSO, for Traefik.
 ```
 
 JWT payload only contain list of accessible domains
+
+## Sister
+
+Check out my sister: [Simple Traefik Dash](https://ms-jpq.github.io/simple-traefik-dash/)
+
+Zero conf service dashboard for Traefik v2
