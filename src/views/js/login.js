@@ -1,4 +1,5 @@
 const main = () => {
+
   const query = async (username, password) => {
     try {
       const params = {
@@ -13,7 +14,7 @@ const main = () => {
     }
   }
 
-  document.querySelector(`form`).onsubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault()
     const { currentTarget: ct } = e
     const username = ct.querySelector(`input[name="username"]`).value
@@ -27,17 +28,11 @@ const main = () => {
     }
   }
 
+  const form = document.querySelector(`form`)
+  form.onsubmit = submit
   form.querySelector(`input[name="username"]`).focus()
+
   console.log("🙆‍♀️ -- Form Ready -- 🙆‍♀️")
 }
 
-const load = (fn) => {
-  switch (document.readyState) {
-    case "complete":
-      return fn()
-    default:
-      return document.addEventListener("DOMContentLoaded", fn)
-  }
-}
-
-load(main)
+document.addEventListener("DOMContentLoaded", main)

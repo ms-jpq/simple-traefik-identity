@@ -39,40 +39,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         policy
 
 
-    [<Route("{*url}")>]
-    member self.Index() =
-        async {
-            let req, resp, conn = Exts.Ctx self.HttpContext
-            let domain = req.Host |> string
-
-            let state =
-                Exts.Cookies req
-                |> Map.tryFind cookie.name
-                |> Option.map (checkAuth jwt domain)
-
-            match state with
-            | Some Authorized ->
-                assert (false)
-                return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
-            | Some Unauthorized ->
-                req.GetDisplayUrl()
-                |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
-                |> logger.LogInformation
-                let html = Unauthorized.Render display
-                resp.StatusCode <- StatusCodes.Status418ImATeapot
-                return self.Content(html, "text/html") :> ActionResult
-            | Some Unauthenticated
-            | _ ->
-                req.GetDisplayUrl()
-                |> sprintf "🔑 -- Authenticating -- 🔑\n%s"
-                |> logger.LogInformation
-                let html = Login.Render display
-                resp.StatusCode <- StatusCodes.Status418ImATeapot
-                return self.Content(html, "text/html") :> ActionResult
-        }
-        |> Async.StartAsTask
-
-
+    [<HttpPost("/")>]
     [<HttpHeader("STI-Authenticate")>]
     member self.Authenticate() =
         async {
@@ -109,5 +76,39 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> logger.LogWarning
                 return {| ok = false
                           timeout = not go |} |> JsonResult :> ActionResult
+        }
+        |> Async.StartAsTask
+
+
+    [<HttpGet("{*url}")>]
+    member self.Index() =
+        async {
+            let req, resp, conn = Exts.Ctx self.HttpContext
+            let domain = req.Host |> string
+
+            let state =
+                Exts.Cookies req
+                |> Map.tryFind cookie.name
+                |> Option.bind (checkAuth jwt domain)
+
+            match state with
+            | Some Authorized ->
+                assert (false)
+                return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
+            | Some Unauthorized ->
+                req.GetDisplayUrl()
+                |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
+                |> logger.LogInformation
+                let html = Unauthorized.Render display
+                resp.StatusCode <- StatusCodes.Status418ImATeapot
+                return self.Content(html, "text/html") :> ActionResult
+            | Some Unauthenticated
+            | _ ->
+                req.GetDisplayUrl()
+                |> sprintf "🔑 -- Authenticating -- 🔑\n%s"
+                |> logger.LogInformation
+                let html = Login.Render display
+                resp.StatusCode <- StatusCodes.Status418ImATeapot
+                return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask

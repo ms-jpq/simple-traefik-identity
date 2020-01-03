@@ -1,5 +1,5 @@
 sys:
-  log_level: WARN
+  log_level: INFORMATION
   port: 5050
 
 jwt:

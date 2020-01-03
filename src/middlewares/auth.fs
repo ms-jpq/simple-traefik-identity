@@ -25,7 +25,7 @@ module Auth =
                     let state =
                         Exts.Cookies req
                         |> Map.tryFind cookie.name
-                        |> Option.map (checkAuth jwt domain)
+                        |> Option.bind (checkAuth jwt domain)
 
                     match state with
                     | Some Authorized ->

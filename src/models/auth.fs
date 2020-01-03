@@ -60,19 +60,17 @@ module Auth =
 
 
     let checkAuth opts (domain: string) cookie =
-        let state =
-            maybe {
-                let! claims = cookie |> readJWT opts
+        maybe {
+            let! claims = cookie |> readJWT opts
 
-                let! model = AccessClaims.DeSerialize claims
-                let auth =
-                    match model.access with
-                    | All -> Authorized
-                    | Named domains ->
-                        let contains = domains |> Seq.Contains(fun d -> domain.EndsWith(d))
-                        match contains with
-                        | true -> Authorized
-                        | false -> Unauthorized
-                return auth
-            }
-        state |> Option.Recover Unauthenticated
+            let! model = AccessClaims.DeSerialize claims
+            let auth =
+                match model.access with
+                | All -> Authorized
+                | Named domains ->
+                    let contains = domains |> Seq.Contains(fun d -> domain.EndsWith(d))
+                    match contains with
+                    | true -> Authorized
+                    | false -> Unauthorized
+            return auth
+        }
