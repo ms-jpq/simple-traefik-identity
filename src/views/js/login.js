@@ -1,12 +1,15 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const header = "STI-Authorization"
   const form = document.querySelector(`form`)
-  const go = form.querySelector(`output[name="goto"]`).value
+  const next = form.querySelector(`output[name="goto"]`).value
 
   const query = async (username, password) => {
     try {
-      const encoded = `Basic ${btoa(`${username}:${password}`)}`
-      const params = { method: "POST", headers: { [header]: encoded } }
+      const params = {
+        method: "POST",
+        headers: {
+          ["STI-Authorization"]: `Basic ${btoa(`${username}:${password}`)}`,
+        }
+      }
       return await (await fetch("/", params)).json()
     } catch (e) {
       alert(e.message)
@@ -18,11 +21,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const { currentTarget: ct } = e
     const username = ct.querySelector(`input[name="username"]`).value
     const password = ct.querySelector(`input[name="password"]`).value
-    const { ok } = await query(username, password)
+    const { ok, timeout } = await query(username, password)
     if (!ok) {
-      alert(`🙅‍♀️🔐`)
+      const msg = timeout ? `⏳⌛️⏳` : `🙅‍♀️🔐`
+      alert(msg)
     } else {
-      location.href = go
+      location.href = next
     }
   }
 

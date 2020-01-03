@@ -25,6 +25,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
     let cookie = deps.Boxed.cookie
     let jwt = deps.Boxed.jwt
     let model = deps.Boxed.model
+    let display = deps.Boxed.display
 
     let policy (domain: string) =
         let policy = CookieOptions()
@@ -42,10 +43,24 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
     member self.Index() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
+            let domain = req.Host |> string
 
+            let state =
+                Exts.Cookies req
+                |> Map.tryFind cookie.name
+                |> Option.map (checkAuth jwt domain)
 
-            let html = ""
-            return self.Content(html, "text/html") :> ActionResult
+            match state with
+            | Some Authorized ->
+                assert (false)
+                return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
+            | Some Unauthorized ->
+                let html = Unauthorized.Render display
+                return self.Content(html, "text/html") :> ActionResult
+            | Some Unauthenticated
+            | _ ->
+                let html = req.GetEncodedUrl() |> Login.Render display
+                return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
@@ -86,6 +101,6 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%s"
                 |> logger.LogWarning
                 return {| ok = false
-                          go = go |} |> JsonResult :> ActionResult
+                          timeout = not go |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask

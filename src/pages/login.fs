@@ -8,7 +8,6 @@ open Layout
 
 module Login =
 
-
     let private login goto =
         [ div [] []
           form [ _action "" ]
@@ -36,6 +35,7 @@ module Login =
                       span [] [] ]
                 div [] [ output [ _name "goto" ] [ rawText goto ] ] ]
           div [] [] ]
+
 
     let Render (display: Display) goto =
         let js = "js/login.js"
