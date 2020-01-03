@@ -83,6 +83,21 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         |> Async.StartAsTask
 
 
+    [<HttpPost("")>]
+    [<HttpHeader("Sti-Deauthorization")>]
+    member self.Deauthenticate() =
+        async {
+            let req, resp, conn = Exts.Ctx self.HttpContext
+            let domain = req.Host |> string
+            req.GetDisplayUrl()
+            |> sprintf "👋 -- Deauthenticated -- 👋\n%s"
+            |> logger.LogWarning
+            resp.Cookies.Delete(cookie.name, policy domain)
+            return StatusCodes.Status418ImATeapot |> StatusCodeResult :> ActionResult
+        }
+        |> Async.StartAsTask
+
+
     [<Route("{*url}")>]
     member self.Login() =
         async {
@@ -102,7 +117,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 req.GetDisplayUrl()
                 |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
                 |> logger.LogInformation
-                let html = Unauthorized.Render display
+                let html = Logout.Render display
                 resp.StatusCode <- StatusCodes.Status403Forbidden
                 return self.Content(html, "text/html") :> ActionResult
             | Some Unauthenticated

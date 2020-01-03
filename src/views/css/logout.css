@@ -88,7 +88,6 @@ footer > * {
   margin-bottom: 0.3em;
 }
 
-
 input[type="submit"] {
   cursor: pointer;
 }
@@ -116,4 +115,17 @@ input[type="submit"] {
   justify-content: space-between;
   align-items: center;
   width: 100%;
+}
+
+form > input {
+  background-image: url("/assets/shutdown.png");
+  background-size: cover;
+  width: 6em;
+  height: 6em;
+  overflow: hidden;
+  border: solid;
+  border-radius: 0.25em;
+  border-color: whitesmoke;
+  border-width: 0.2em;
+  box-shadow: 0.3em -0.1em 0.3em 0em  rgb(40, 40, 40, 0.5);
 }
