@@ -73,6 +73,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 ns
                 |> Map.tryFind ip
                 |> Option.Recover Seq.empty
+                |> Seq.map (sprintf "⏱ - %A")
                 |> fun x -> String.Join("\n", x)
                 |> sprintf "⛔️ -- Authentication Failure -- ⛔️\n%s\n%s" uri
                 |> logger.LogWarning

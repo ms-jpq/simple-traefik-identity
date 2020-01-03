@@ -9,5 +9,7 @@ services:
     container_name: sti
     ports:
       - 5050:5050
+    environment:
+      - TZ=${TZ}
     volumes:
       - ./config/conf.yml:/sti/config/conf.yml
