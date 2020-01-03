@@ -19,7 +19,7 @@ module Rewrite =
                     let find = Exts.Headers req |> flip Map.tryFind
 
                     conn.RemoteIpAddress <-
-                        find "X-Forwarded-For"
+                        find ipHeader
                         |> Option.map string
                         |> Option.bind ((Result.New IPAddress.Parse) >> Option.OfResult)
                         |> Option.Recover conn.RemoteIpAddress
@@ -41,7 +41,7 @@ module Rewrite =
                         |> Option.Recover req.Method
 
                     req.Host <-
-                        find ipHeader
+                        find "X-Forwarded-Host"
                         |> Option.map string
                         |> Option.bind ((Result.New HostString) >> Option.OfResult)
                         |> Option.Recover req.Host
