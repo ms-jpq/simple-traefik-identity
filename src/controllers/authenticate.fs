@@ -33,6 +33,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         policy.Domain <-
             model.baseDomains
             |> Seq.tryFind (fun d -> domain.EndsWith(d))
+            |> Option.map ((+) ".")
             |> Option.Recover domain
 
         policy

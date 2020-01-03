@@ -41,7 +41,7 @@ module Server =
         let options = CookiePolicyOptions()
         options.HttpOnly <- HttpOnlyPolicy.Always
         options.Secure <- CookieSecurePolicy.SameAsRequest
-        options.MinimumSameSitePolicy <- SameSiteMode.Lax
+        options.MinimumSameSitePolicy <- SameSiteMode.Strict
         options
 
 
