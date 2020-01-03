@@ -19,17 +19,26 @@ open System
 
 
 [<Controller>]
-[<Port(WEBSRVPORT)>]
 type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, state: GlobalVar<State>) =
     inherit Controller()
 
-    let cOpts = deps.Boxed.cookie
-    let jOpts = deps.Boxed.jwt
+    let cookie = deps.Boxed.cookie
+    let jwt = deps.Boxed.jwt
     let model = deps.Boxed.model
 
+    let policy (domain: string) =
+        let policy = CookieOptions()
+        policy.Path <- "/"
+        policy.MaxAge <- cookie.maxAge |> Nullable
+        policy.Domain <-
+            model.baseDomains
+            |> Seq.tryFind (fun d -> domain.EndsWith(d))
+            |> Option.Recover domain
+
+        policy
 
 
-    [<HttpGet("")>]
+    [<Route("")>]
     member self.Index() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
@@ -41,12 +50,20 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         |> Async.StartAsTask
 
 
-    [<HttpPost("/authenticate")>]
+    [<HttpPost("")>]
+    [<HttpHeader("STI-Authenticate")>]
     member self.Authenticate() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
+            resp.StatusCode <- StatusCodes.Status418ImATeapot
 
-            let token = None
+            let domain = req.Host |> string
+
+            let token =
+                Exts.Headers req
+                |> Map.MapValues string
+                |> Map.tryFind "STI-Authenticate"
+                |> Option.bind (newToken jwt model)
 
             let! st = state.Get()
             let go, ns =
@@ -59,16 +76,16 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
 
             match (go, token) with
             | (true, Some tkn) ->
-
                 req.GetDisplayUrl()
                 |> sprintf "🦄 -- Authenticated -- 🦄\n%s"
                 |> logger.LogWarning
-
+                resp.Cookies.Append(cookie.name, tkn, policy domain)
+                return {| ok = true |} |> JsonResult :> ActionResult
             | _ ->
                 req.GetDisplayUrl()
                 |> sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%s"
                 |> logger.LogWarning
-
-            return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
+                return {| ok = false
+                          go = go |} |> JsonResult :> ActionResult
         }
         |> Async.StartAsTask

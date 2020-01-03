@@ -27,16 +27,7 @@ https://ms-jpq.github.io/simple-traefik-identity/
     let README = readme
 
     [<Literal>]
-    let AUTHSRVPORT = 5050
-
-    [<Literal>]
     let WEBSRVPORT = 6060
-
-    [<Literal>]
-    let AUTHNAME = "_sti_auth"
-
-    [<Literal>]
-    let DEAUTHNAME = "_sti_deauth"
 
     let DEFAULTTITLE = "Simple Traefik Identity"
 

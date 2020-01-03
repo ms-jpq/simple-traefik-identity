@@ -13,6 +13,7 @@ open System
 open STI.Env
 open STI.Consts
 open STI.Middlewares.Rewrite
+open STI.Middlewares.Auth
 
 
 
@@ -30,10 +31,10 @@ module Server =
         services.AddControllers() |> ignore
 
 
-    let private confAuthorize (deps: Variables) (app: IApplicationBuilder) =
-        app.UseMiddleware<RewriteMiddleware>() |> ignore
-        app.UseRouting() |> ignore
-        app.UseEndpoints(fun ep -> ep.MapControllers() |> ignore) |> ignore
+    let private confStaticFile =
+        let options = StaticFileOptions()
+        options.OnPrepareResponse <- fun ctx -> ctx.Context.Response.StatusCode <- StatusCodes.Status418ImATeapot
+        options
 
 
     let private confCookies =
@@ -44,33 +45,22 @@ module Server =
         options
 
 
-    let private confAuthenticate (deps: Variables) (app: IApplicationBuilder) =
+    let private confApp deps (app: IApplicationBuilder) =
         app.UseStatusCodePages() |> ignore
         app.UseDeveloperExceptionPage() |> ignore
-        app.UsePathBase(deps.baseuri.LocalPath |> PathString) |> ignore
-        app.UseStaticFiles() |> ignore
+        app.UseMiddleware<RewriteMiddleware>() |> ignore
+        app.UseMiddleware<AuthMiddleware>() |> ignore
+        app.UseStaticFiles(confStaticFile) |> ignore
         app.UseCookiePolicy(confCookies) |> ignore
         app.UseRouting() |> ignore
         app.UseCors() |> ignore
         app.UseEndpoints(fun ep -> ep.MapControllers() |> ignore) |> ignore
 
 
-    let private confApp deps (app: IApplicationBuilder) =
-        let discriminate port (ctx: HttpContext) = ctx.Connection.LocalPort = port
-        let f1 = Func<HttpContext, bool>(discriminate AUTHSRVPORT)
-        let a1 = Action<IApplicationBuilder>(confAuthorize deps)
-        let f2 = Func<HttpContext, bool>(discriminate WEBSRVPORT)
-        let a2 = Action<IApplicationBuilder>(confAuthenticate deps)
-        app.UseWhen(f1, a1) |> ignore
-        app.UseWhen(f2, a2) |> ignore
-
-
     let private confWebhost (deps: Variables) gloabls (webhost: IWebHostBuilder) =
-        let auth = sprintf "http://0.0.0.0:%d" AUTHSRVPORT
-        let web = sprintf "http://0.0.0.0:%d" WEBSRVPORT
         webhost.UseWebRoot(RESOURCESDIR) |> ignore
         webhost.UseKestrel() |> ignore
-        webhost.UseUrls(auth, web) |> ignore
+        webhost.UseUrls(sprintf "http://0.0.0.0:%d" deps.sys.port) |> ignore
         webhost.ConfigureServices(confServices deps gloabls) |> ignore
         webhost.Configure(Action<IApplicationBuilder>(confApp deps)) |> ignore
 

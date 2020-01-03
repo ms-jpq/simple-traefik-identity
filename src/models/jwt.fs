@@ -27,7 +27,7 @@ module JWT =
         with _ -> None
 
 
-    let newJWT (opts: JWTopts) (payload: string) =
+    let newJWT (opts: JWTopts) lifespan (payload: string) =
         let jwt = JwtSecurityTokenHandler()
         let now = DateTime.UtcNow
         let key = opts.secret |> SymmetricSecurityKey
@@ -38,7 +38,7 @@ module JWT =
             desc.SigningCredentials <- SigningCredentials(key, algo)
             desc.Issuer <- opts.issuer
             desc.IssuedAt <- now |> Nullable
-            desc.Expires <- now + opts.lifespan |> Nullable
+            desc.Expires <- now + lifespan |> Nullable
             desc
 
         let token = jwt.CreateJwtSecurityToken(desc)

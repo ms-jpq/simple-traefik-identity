@@ -13,9 +13,12 @@ open System.Text
 module Env =
 
     type SysOpts =
-        { logLevel: LogLevel }
+        { logLevel: LogLevel
+          port: int }
 
-        static member Def = { logLevel = LogLevel.Warning }
+        static member Def =
+            { logLevel = LogLevel.Warning
+              port = WEBSRVPORT }
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
@@ -24,9 +27,10 @@ module Env =
                     |> Option.bind Parse.Enum<LogLevel>
                     |> Option.Recover SysOpts.Def.logLevel
 
+                let port = get.Optional.Field "port" Decode.int |> Option.Recover SysOpts.Def.port
 
-
-                { logLevel = logLevel }
+                { logLevel = logLevel
+                  port = port }
 
             Decode.object resolve
 
@@ -56,25 +60,17 @@ module Env =
 
     type JWTopts =
         { secret: byte array
-          lifespan: TimeSpan
           issuer: string }
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
                 let secret = get.Required.Field "secret" Decode.string |> Encoding.UTF8.GetBytes
 
-                let lifespan =
-                    get.Optional.Field "lifespan" Decode.string
-                    |> Option.bind Parse.Float
-                    |> Option.map TimeSpan.FromHours
-                    |> Option.Recover TOKENLIFESPAN
-
                 match secret.Length with
                 | l when l <= 150 -> failwith "☢️ -- PICK A LONGER SECRET -- ☢️"
                 | _ -> ()
 
                 { secret = secret
-                  lifespan = lifespan
                   issuer = TOKENISSUER }
 
             Decode.object resolve
@@ -87,6 +83,7 @@ module Env =
     type User =
         { name: string
           password: string
+          session: TimeSpan
           subDomains: Domains }
 
     type AuthModel =
@@ -110,6 +107,11 @@ module Env =
             let resovleU (groups: (string * string seq) seq) (get: Decode.IGetters) =
                 let name = get.Required.Field "name" Decode.string
                 let password = get.Required.Field "password" Decode.string
+                let session =
+                    get.Optional.Field "session" Decode.string
+                    |> Option.bind Parse.Float
+                    |> Option.map TimeSpan.FromHours
+                    |> Option.Recover TOKENLIFESPAN
 
                 let chk =
                     get.Required.Field "groups" (Decode.list Decode.string)
@@ -124,6 +126,7 @@ module Env =
 
                 { name = name
                   password = password
+                  session = session
                   subDomains = subDomains }
 
             let resolve (get: Decode.IGetters) =
@@ -199,8 +202,7 @@ module Env =
 
 
     type Variables =
-        { baseuri: Uri
-          sys: SysOpts
+        { sys: SysOpts
           cookie: CookieOpts
           jwt: JWTopts
           model: AuthModel
@@ -209,10 +211,6 @@ module Env =
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
-                let baseuri =
-                    get.Required.Field "base_uri" Decode.string
-                    |> Parse.Uri
-                    |> Option.ForceUnwrap "Failed to parse uri"
 
                 let sys = get.Optional.Field "sys" SysOpts.Decoder |> Option.Recover SysOpts.Def
                 let cookie = get.Optional.Field "cookie" CookieOpts.Decoder |> Option.Recover CookieOpts.Def
@@ -221,8 +219,7 @@ module Env =
                 let rateLimit = get.Optional.Field "rate_limit" RateLimit.Decoder |> Option.Recover RateLimit.Def
                 let display = get.Optional.Field "display" Display.Decoder |> Option.Recover Display.Def
 
-                { baseuri = baseuri
-                  sys = sys
+                { sys = sys
                   cookie = cookie
                   jwt = jwt
                   model = model

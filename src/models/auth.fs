@@ -47,29 +47,32 @@ module Auth =
         let seek (u: User) = u.name = username && u.password = password
         model.users |> Seq.tryFind seek
 
+    let private tokenize opts (user: User) =
+        let access = { access = user.subDomains }
+        AccessClaims.Serialize access |> newJWT opts user.session
 
-    let newToken jOpts model header =
+
+    let newToken opts model header =
         header
         |> decode
         |> Option.bind ((<||) (login model))
-        |> Option.map (fun u -> { access = u.subDomains })
-        |> Option.map (AccessClaims.Serialize >> (newJWT jOpts))
+        |> Option.map (tokenize opts)
 
 
-    let checkAuth jopts (domain: string) cookie =
+    let checkAuth opts (domain: string) cookie =
         let state =
             maybe {
-                let! claims = cookie |> readJWT jopts
+                let! claims = cookie |> readJWT opts
 
                 let! model = AccessClaims.DeSerialize claims
                 let auth =
                     match model.access with
-                    | All -> AuthState.Authorized
+                    | All -> Authorized
                     | Named domains ->
                         let contains = domains |> Seq.Contains(fun d -> domain.EndsWith(d))
                         match contains with
-                        | true -> AuthState.Authorized
-                        | false -> AuthState.Unauthorized
+                        | true -> Authorized
+                        | false -> Unauthorized
                 return auth
             }
-        state |> Option.Recover AuthState.Unauthenticated
+        state |> Option.Recover Unauthenticated

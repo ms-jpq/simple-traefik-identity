@@ -8,7 +8,9 @@ open System.Net
 
 module Rewrite =
 
-    type RewriteMiddleware(next: RequestDelegate) =
+    type RewriteMiddleware(next: RequestDelegate, deps: Variables Container) =
+
+        let ipHeader = deps.Boxed.rateLimit.header
 
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
@@ -39,7 +41,7 @@ module Rewrite =
                         |> Option.Recover req.Method
 
                     req.Host <-
-                        find "X-Forwarded-Host"
+                        find ipHeader
                         |> Option.map string
                         |> Option.bind ((Result.New HostString) >> Option.OfResult)
                         |> Option.Recover req.Host

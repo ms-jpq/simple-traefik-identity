@@ -24,14 +24,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)/models/ratelimit.fs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)/middlewares/auth.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/middlewares/rewrite.fs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)/pages/layout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/login.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/pages/logout.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/pages/unauthorized.fs" />
-    <Compile Include="$(MSBuildThisFileDirectory)/controllers/authorize.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/controllers/authenticate.fs" />
     <Compile Include="$(MSBuildThisFileDirectory)/server.fs" />
   </ItemGroup>
