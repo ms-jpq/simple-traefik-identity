@@ -18,13 +18,14 @@ module Layout =
           (async () => {
             script.textContent = await (await fetch("%s")).text()
             document.head.append(script)
-          })()
-          ;(async () => {
+          })();
+          (async () => {
             style.textContent = await (await fetch("%s")).text()
             document.head.append(style)
-          })()
-        })(["script", "style"].map((t) => document.createElement(t)));
+          })();
+        })(["script", "style"].map(t => document.createElement(t)));
         """
+
 
     let Layout js css background tit form =
         html []

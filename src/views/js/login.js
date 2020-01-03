@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+const main = () => {
   const query = async (username, password) => {
     try {
       const params = {
@@ -28,4 +28,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   form.querySelector(`input[name="username"]`).focus()
-})
+  console.log("🙆‍♀️ -- Form Ready -- 🙆‍♀️")
+}
+
+const load = (fn) => {
+  switch (document.readyState) {
+    case "complete":
+      return fn()
+    default:
+      return document.addEventListener("DOMContentLoaded", fn)
+  }
+}
+
+load(main)

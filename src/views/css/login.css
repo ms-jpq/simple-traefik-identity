@@ -186,7 +186,3 @@ section input[type="submit"] {
   background-size: 100% 100%;
   width: 2.5em;
 }
-
-form > div:last-child {
-  display: none;
-}
