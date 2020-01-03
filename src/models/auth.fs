@@ -2,6 +2,7 @@ namespace STI.Models
 
 open STI.Env
 open DomainAgnostic
+open DomainAgnostic.Encode
 open JWT
 open Newtonsoft.Json
 open System
@@ -28,12 +29,11 @@ module Auth =
     let private decode (header: string) =
         try
             let credentials = header.Split(" ")
-            if credentials.[0] <> "Basic" then failwith "..."
+            if credentials.[0] <> "Basic" then failwith "<> Basic"
 
             let decoded =
                 credentials.[1]
-                |> Convert.FromBase64String
-                |> Encoding.UTF8.GetString
+                |> base64decode
                 |> fun s -> s.Split(":")
 
             let username = decoded.[0]
