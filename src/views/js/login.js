@@ -1,7 +1,4 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector(`form`)
-  const next = form.querySelector(`output[name="goto"]`).value
-
   const query = async (username, password) => {
     try {
       const params = {
@@ -16,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  form.onsubmit = async (e) => {
+  document.querySelector(`form`).onsubmit = async (e) => {
     e.preventDefault()
     const { currentTarget: ct } = e
     const username = ct.querySelector(`input[name="username"]`).value
@@ -26,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const msg = timeout ? `⏳⌛️⏳` : `🙅‍♀️🔐`
       alert(msg)
     } else {
-      location.href = next
+      location.reload()
     }
   }
 

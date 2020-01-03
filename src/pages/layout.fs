@@ -16,11 +16,11 @@ module Layout =
         "use strict";
         (([script, style]) => {
           (async () => {
-            script.textContent = await (await fetch(%s).text())
+            script.textContent = await (await fetch("%s")).text()
             document.head.append(script)
           })()
           ;(async () => {
-            style.textContent = await (await fetch(%s).text())
+            style.textContent = await (await fetch("%s")).text()
             document.head.append(style)
           })()
         })(["script", "style"].map((t) => document.createElement(t)));

@@ -12,7 +12,7 @@ module Unauthorized =
 
 
     let Render(display: Display) =
-        let js = "js/unauthorized.js"
-        let css = "css/unauthorized.css"
+        let js = "/js/unauthorized.js"
+        let css = "/css/unauthorized.css"
         let nodes = Layout js css display.background display.title [ denied ]
         nodes |> renderHtmlDocument

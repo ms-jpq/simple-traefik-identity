@@ -8,7 +8,7 @@ open Layout
 
 module Login =
 
-    let private login goto =
+    let private login =
         [ div [] []
           form [ _action "" ]
               [ div []
@@ -32,13 +32,12 @@ module Login =
                                   input
                                       [ _type "submit"
                                         _value " " ] ] ]
-                      span [] [] ]
-                div [] [ output [ _name "goto" ] [ rawText goto ] ] ]
+                      span [] [] ] ]
           div [] [] ]
 
 
-    let Render (display: Display) goto =
-        let js = "js/login.js"
-        let css = "css/login.css"
-        let nodes = Layout js css display.background display.title (login goto)
+    let Render (display: Display) =
+        let js = "/js/login.js"
+        let css = "/css/login.css"
+        let nodes = Layout js css display.background display.title login
         nodes |> renderHtmlDocument

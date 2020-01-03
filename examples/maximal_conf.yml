@@ -1,10 +1,8 @@
 sys:
   log_level: WARN
-
+  port: 5050
 
 jwt:
-  lifespan: 24 # Hours, How long you have before you need to login again
-  issuer: SUPER_STI
   # You need a long secret
   # Too short and STI will not work
   secret: |-
@@ -22,9 +20,6 @@ jwt:
     O Canada, we stand on guard for thee.
 
     O Canada, we stand on guard for thee.
-
-# TODO -- FILL ME IN
-base_uri: https://services.gc.ca
 
 auth:
   # Set this for your base level domain
@@ -51,6 +46,9 @@ auth:
     # Yukon has access to all the gucci
     - name: yukon
       password: yukon
+      # Yukon's login session only lasts 30 minutes
+      # Default is 24 hours
+      session: 0.5
       groups:
         - quebec
     # nunavut has access to

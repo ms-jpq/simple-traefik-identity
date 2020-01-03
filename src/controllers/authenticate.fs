@@ -39,7 +39,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         policy
 
 
-    [<Route("")>]
+    [<Route("{*url}")>]
     member self.Index() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
@@ -55,17 +55,24 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 assert (false)
                 return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
             | Some Unauthorized ->
+                req.GetDisplayUrl()
+                |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
+                |> logger.LogInformation
                 let html = Unauthorized.Render display
+                resp.StatusCode <- StatusCodes.Status418ImATeapot
                 return self.Content(html, "text/html") :> ActionResult
             | Some Unauthenticated
             | _ ->
-                let html = req.GetEncodedUrl() |> Login.Render display
+                req.GetDisplayUrl()
+                |> sprintf "🔑 -- Authenticating -- 🔑\n%s"
+                |> logger.LogInformation
+                let html = Login.Render display
+                resp.StatusCode <- StatusCodes.Status418ImATeapot
                 return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
 
-    [<HttpPost("")>]
     [<HttpHeader("STI-Authenticate")>]
     member self.Authenticate() =
         async {
@@ -98,7 +105,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 return {| ok = true |} |> JsonResult :> ActionResult
             | _ ->
                 req.GetDisplayUrl()
-                |> sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%s"
+                |> sprintf "⛔️ -- Authentication Failure -- ⛔️\n%s"
                 |> logger.LogWarning
                 return {| ok = false
                           timeout = not go |} |> JsonResult :> ActionResult
