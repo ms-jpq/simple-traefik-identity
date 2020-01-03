@@ -39,8 +39,8 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         policy
 
 
-    [<HttpPost("/")>]
-    [<HttpHeader("STI-Authenticate")>]
+    [<HttpPost("")>]
+    [<HttpHeader("STI-Authorization")>]
     member self.Authenticate() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
@@ -51,7 +51,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
             let token =
                 Exts.Headers req
                 |> Map.MapValues string
-                |> Map.tryFind "STI-Authenticate"
+                |> Map.tryFind "STI-Authorization"
                 |> Option.bind (newToken jwt model)
 
             let! st = state.Get()
@@ -80,8 +80,8 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         |> Async.StartAsTask
 
 
-    [<HttpGet("{*url}")>]
-    member self.Index() =
+    [<Route("{*url}")>]
+    member self.Login() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
             let domain = req.Host |> string
