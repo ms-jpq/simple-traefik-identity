@@ -17,6 +17,7 @@ open Microsoft.Extensions.Logging
 open System
 
 
+
 [<Controller>]
 [<Port(WEBSRVPORT)>]
 type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, state: GlobalVar<State>) =
@@ -27,53 +28,24 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
     let model = deps.Boxed.model
 
 
-    let render authState (req: HttpRequest) =
-        let uri = req.GetDisplayUrl() |> string
-        let info = sprintf "%A - %A" uri authState
-
-        match (authState) with
-        | Authorized ->
-            let html = Logout.Render deps.Boxed.display
-            logger.LogInformation info
-            html
-        | Unauthorized ->
-            logger.LogWarning info
-            let html = "" |> Unauthorized.Render deps.Boxed.display
-            html
-        | Unauthenticated
-        | _ ->
-            logger.LogWarning info
-            let html = req.GetEncodedUrl() |> Login.Render deps.Boxed.display
-            html
-
-
 
     [<HttpGet("")>]
     member self.Index() =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let host = req.Host |> string
+            let req, resp, conn = Exts.Ctx self.HttpContext
 
-            let authState =
-                Exts.Cookies self.HttpContext.Request
-                |> Map.tryFind cOpts.name
-                |> Option.Recover ""
-                |> checkAuth jOpts host
 
-            let html = render authState req
+            let html = ""
             return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
 
 
     [<HttpPost("/authenticate")>]
-    member self.Login() =
+    member self.Authenticate() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
 
-
-            let uri = req.GetDisplayUrl() |> string
             let token = None
 
             let! st = state.Get()
@@ -87,35 +59,16 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
 
             match (go, token) with
             | (true, Some tkn) ->
-                let info =
-                    sprintf "🦄 -- Authenticated -- 🦄\n%A" uri
 
-                logger.LogWarning info
-                return {| ok = true
-                          go = true |} |> JsonResult :> ActionResult
+                req.GetDisplayUrl()
+                |> sprintf "🦄 -- Authenticated -- 🦄\n%s"
+                |> logger.LogWarning
+
             | _ ->
-                let info =
-                    sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%A" uri
+                req.GetDisplayUrl()
+                |> sprintf "⛔️ -- Authentication Attempt -- ⛔️\n%s"
+                |> logger.LogWarning
 
-                logger.LogWarning info
-                return {| ok = false
-                          go = go |} |> JsonResult :> ActionResult
-        }
-        |> Async.StartAsTask
-
-
-    [<HttpPost("/deauthenticate")>]
-    member self.Logout() =
-        async {
-            let req, resp, conn = Exts.Ctx self.HttpContext
-
-            let uri = req.GetDisplayUrl() |> string
-
-            let info =
-                sprintf "👋 -- Deauthenticated -- 👋\n%A" uri
-
-
-            logger.LogWarning info
-            return {| ok = true |} |> JsonResult :> ActionResult
+            return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
         }
         |> Async.StartAsTask

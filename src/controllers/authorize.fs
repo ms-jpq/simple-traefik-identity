@@ -80,19 +80,21 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
             match authStatus with
             | Authorized -> return StatusCodes.Status200OK |> StatusCodeResult :> IActionResult
             | Unauthorized ->
-                let info =
-                    req.GetDisplayUrl()
-                    |> sprintf "💁‍♀️ -- Allowed -- 💁‍♀️\n%s"
-                logger.LogInformation info
+
+                req.GetDisplayUrl()
+                |> sprintf "💁‍♀️ -- Allowed -- 💁‍♀️\n%s"
+                |> logger.LogInformation
+
                 Unauthorized
                 |> string
                 |> redirect req resp
                 return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
             | Unauthenticated ->
-                let info =
-                    req.GetDisplayUrl()
-                    |> sprintf "🙅‍♀️ -- Denied -- 🙅‍♀️\n%s"
-                logger.LogWarning info
+
+                req.GetDisplayUrl()
+                |> sprintf "🙅‍♀️ -- Denied -- 🙅‍♀️\n%s"
+                |> logger.LogWarning
+
                 Unauthenticated
                 |> string
                 |> redirect req resp
@@ -109,7 +111,9 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
 
             match auth with
             | Some(token, uri) ->
-                let info = "🔑 -- Authorized -- 🔑\n%s"
+                uri
+                |> sprintf "🔑 -- Authorized -- 🔑\n%s"
+                |> logger.LogWarning
 
                 let policy =
                     req.Host
@@ -119,10 +123,10 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
                 resp.Cookies.Append(cookie.name, token, policy)
                 [ "Location", uri ] |> flip Exts.AddHeaders resp
 
-                logger.LogWarning info
+
                 return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
             | None ->
-                logger.LogError "⚠️ -- Invalid Auth Info -- ⚠️"
+                "⚠️ -- Invalid Auth Info -- ⚠️" |> logger.LogError
                 return StatusCodes.Status400BadRequest |> StatusCodeResult :> IActionResult
         }
         |> Async.StartAsTask
@@ -133,9 +137,9 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
 
-            let info =
-                req.GetDisplayUrl()
-                |> sprintf "🔐 -- Deauthorized -- 🔐\n%s"
+            req.GetDisplayUrl()
+            |> sprintf "🔐 -- Deauthorized -- 🔐\n%s"
+            |> logger.LogWarning
 
             let policy =
                 req.Host
@@ -145,7 +149,6 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
             resp.Cookies.Delete(cookie.name, policy)
             [ "Location", "/" ] |> flip Exts.AddHeaders resp
 
-            logger.LogWarning info
             return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
         }
         |> Async.StartAsTask
