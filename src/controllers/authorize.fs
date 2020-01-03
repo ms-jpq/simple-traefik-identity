@@ -21,7 +21,7 @@ open System
 type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
     inherit Controller()
 
-
+    let authUri = deps.Boxed.baseuri
     let cookie = deps.Boxed.cookie
     let jwt = deps.Boxed.jwt
     let model = deps.Boxed.model
@@ -38,17 +38,19 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
         policy
 
     let redirect (req: HttpRequest) (resp: HttpResponse) reason =
-        let uri = req.GetEncodedUrl() |> base64encode
+        let query =
+            let builder = authUri |> UriBuilder
+            builder.Query <-
+                [ "redirect-uri", req.GetEncodedUrl() |> base64encode
+                  "redirect-reason", reason ]
+                |> Map.ofSeq
+                |> Map.ToKVP
+                |> QueryString.Create
+                |> string
+            builder |> string
 
-        let args =
-            [ "redirect-uri", uri
-              "redirect-reason", reason ]
-            |> Map.ofSeq
-            |> Map.ToKVP
+        [ "Location", query ] |> flip Exts.AddHeaders resp
 
-        let query = QueryString.Create(args).ToString()
-        let headers = [ "Location", query ]
-        Exts.AddHeaders headers resp
 
     let authQuery (req: HttpRequest) =
         let find =
@@ -85,17 +87,15 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
                 |> sprintf "💁‍♀️ -- Allowed -- 💁‍♀️\n%s"
                 |> logger.LogInformation
 
-                Unauthorized
-                |> string
-                |> redirect req resp
-                return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
+
+                return StatusCodes.Status401Unauthorized |> StatusCodeResult :> IActionResult
             | Unauthenticated ->
 
                 req.GetDisplayUrl()
                 |> sprintf "🙅‍♀️ -- Denied -- 🙅‍♀️\n%s"
                 |> logger.LogWarning
 
-                Unauthenticated
+                Unauthorized
                 |> string
                 |> redirect req resp
                 return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
