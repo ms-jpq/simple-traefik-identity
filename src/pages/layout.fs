@@ -33,11 +33,6 @@ module Layout =
                     meta
                         [ _name "viewport"
                           _content "width=device-width, initial-scale=1" ]
-                    script [] [ load js css |> rawText ]
-                    style []
-                        [ background
-                          |> _css
-                          |> str ]
                     title [] [ str tit ] ]
               body []
                   [ div [] []
@@ -49,5 +44,10 @@ module Layout =
                                 span [] []
                                 div [] [] ] ]
                     div [] []
-                    footer [] [ a [ _href PROJECTURI ] [ str "github" ] ]
-                    div [] [] ] ]
+                    footer [] [ a [ _href PROJECTURI ] [ str "★ github ★" ] ]
+                    div [] []
+                    script [] [ load js css |> rawText ]
+                    style []
+                        [ background
+                          |> _css
+                          |> str ] ] ]

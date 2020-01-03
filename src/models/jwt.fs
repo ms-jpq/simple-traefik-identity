@@ -42,5 +42,5 @@ module JWT =
             desc
 
         let token = jwt.CreateJwtSecurityToken(desc)
-        assert (token.Payload.TryAdd("payload", payload))
+        token.Payload.Add("payload", payload)
         jwt.WriteToken token

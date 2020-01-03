@@ -5,8 +5,6 @@ open DomainAgnostic
 open DomainAgnostic.Encode
 open JWT
 open Newtonsoft.Json
-open System
-open System.Text
 
 
 module Auth =

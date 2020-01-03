@@ -35,4 +35,4 @@ const main = () => {
   console.log("🙆‍♀️ -- Form Ready -- 🙆‍♀️")
 }
 
-document.addEventListener("DOMContentLoaded", main)
+main()

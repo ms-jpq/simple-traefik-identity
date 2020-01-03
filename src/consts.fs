@@ -20,7 +20,16 @@ module Consts =
 Simple Traefik Identity (STI)
 STI is a Single Sign-On service for Traefik
 ==============================================================================
-For usage, please reference
+-
+For basic usage, please reference
+https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/minimal_conf.yml
+-
+
+-
+For advanced usage, please reference
+https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/maximal_conf.yml
+-
+==============================================================================
 https://ms-jpq.github.io/simple-traefik-identity/
 """
 

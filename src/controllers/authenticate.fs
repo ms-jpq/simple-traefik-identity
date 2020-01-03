@@ -53,11 +53,10 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> Map.tryFind "Sti-Authorization"
                 |> Option.bind (newToken jwt model)
 
+            let ip = conn.RemoteIpAddress |> string
+
             let! st = state.Get()
-            let go, ns =
-                conn.RemoteIpAddress
-                |> string
-                |> next deps.Boxed.rateLimit st.history
+            let go, ns = ip |> next deps.Boxed.rateLimit st.history
 
             let s2 = { history = ns }
             do! state.Put(s2) |> Async.Ignore
@@ -70,8 +69,12 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 resp.Cookies.Append(cookie.name, tkn, policy domain)
                 return {| ok = true |} |> JsonResult :> ActionResult
             | _ ->
-                req.GetDisplayUrl()
-                |> sprintf "⛔️ -- Authentication Failure -- ⛔️\n%s"
+                let uri = req.GetDisplayUrl()
+                ns
+                |> Map.tryFind ip
+                |> Option.Recover Seq.empty
+                |> fun x -> String.Join("\n", x)
+                |> sprintf "⛔️ -- Authentication Failure -- ⛔️\n%s\n%s" uri
                 |> logger.LogWarning
                 return {| ok = false
                           timeout = not go |} |> JsonResult :> ActionResult
@@ -99,7 +102,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
                 |> logger.LogInformation
                 let html = Unauthorized.Render display
-                resp.StatusCode <- StatusCodes.Status418ImATeapot
+                resp.StatusCode <- StatusCodes.Status407ProxyAuthenticationRequired
                 return self.Content(html, "text/html") :> ActionResult
             | Some Unauthenticated
             | _ ->
@@ -107,7 +110,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> sprintf "🔑 -- Authenticating -- 🔑\n%s"
                 |> logger.LogInformation
                 let html = Login.Render display
-                resp.StatusCode <- StatusCodes.Status418ImATeapot
+                resp.StatusCode <- StatusCodes.Status407ProxyAuthenticationRequired
                 return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
