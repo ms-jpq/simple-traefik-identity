@@ -17,17 +17,6 @@ open Microsoft.Extensions.Logging
 open System
 
 
-module Ingress =
-
-    [<CLIMutable>]
-    type LoginHeaders =
-        { [<FromHeader(Name = "STI-Authorization")>]
-          authorization: string }
-
-
-open Ingress
-
-
 [<Controller>]
 [<Port(WEBSRVPORT)>]
 type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, state: GlobalVar<State>) =
@@ -43,15 +32,15 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         let info = sprintf "%A - %A" uri authState
 
         match (authState) with
-        | AuthState.Authorized ->
+        | Authorized ->
             let html = Logout.Render deps.Boxed.display
             logger.LogInformation info
             html
-        | AuthState.Unauthorized ->
+        | Unauthorized ->
             logger.LogWarning info
             let html = "" |> Unauthorized.Render deps.Boxed.display
             html
-        | AuthState.Unauthenticated
+        | Unauthenticated
         | _ ->
             logger.LogWarning info
             let html = req.GetEncodedUrl() |> Login.Render deps.Boxed.display
@@ -79,15 +68,13 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
 
 
     [<HttpPost("/authenticate")>]
-    member self.Login(credentials: LoginHeaders) =
+    member self.Login() =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let conn = self.HttpContext.Connection
+            let req, resp, conn = Exts.Ctx self.HttpContext
 
 
             let uri = req.GetDisplayUrl() |> string
-            let token = credentials.authorization |> newToken jOpts model
+            let token = None
 
             let! st = state.Get()
             let go, ns =
@@ -120,8 +107,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
     [<HttpPost("/deauthenticate")>]
     member self.Logout() =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
+            let req, resp, conn = Exts.Ctx self.HttpContext
 
             let uri = req.GetDisplayUrl() |> string
 

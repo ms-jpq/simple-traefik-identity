@@ -21,9 +21,9 @@ module Auth =
             |> Option.OfResult
 
     type AuthState =
-        | Unauthenticated = 407
-        | Unauthorized = 403
-        | Authorized = 203
+        | Unauthenticated
+        | Unauthorized
+        | Authorized
 
     let decode (header: string) =
         try

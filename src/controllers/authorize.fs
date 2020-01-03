@@ -3,6 +3,7 @@ namespace STI.Controllers
 open STI
 open STI.Env
 open STI.Consts
+open STI.Models.JWT
 open STI.Models.Auth
 open DomainAgnostic
 open DomainAgnostic.Encode
@@ -22,7 +23,7 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
 
 
     let cookie = deps.Boxed.cookie
-    let jtw = deps.Boxed.jwt
+    let jwt = deps.Boxed.jwt
     let model = deps.Boxed.model
 
     let cookiePolicy (domain: string) =
@@ -49,20 +50,25 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
         let headers = [ "Location", query ]
         Exts.AddHeaders headers resp
 
-    let queryRedirect (req: HttpRequest) =
-        let find = Exts.Query req |> flip Map.tryFind
+    let authQuery (req: HttpRequest) =
+        let find =
+            Exts.Query req
+            |> (flip Map.tryFind)
+            |> (<<) (Option.map string)
         maybe {
-            let! uri = find "redirect-uri" |> Option.map (string >> base64decode)
-            let! token = find "token" |> Option.map string
-            return token, uri }
-
+            let! uri = find "redirect-uri" |> Option.map base64decode
+            let! token = find "token"
+            do! token
+                |> readJWT jwt
+                |> Option.map ignore
+            return token, uri
+        }
 
 
     [<HttpGet("")>]
     member self.Index() =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
+            let req, resp, conn = Exts.Ctx self.HttpContext
             let domain = req.Host |> string
 
             let authStatus =
@@ -72,15 +78,14 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
                 |> checkAuth deps.Boxed.jwt domain
 
             match authStatus with
-            | AuthState.Authorized -> return StatusCodes.Status200OK |> StatusCodeResult :> IActionResult
-            | AuthState.Unauthorized ->
-                AuthState.Unauthorized
+            | Authorized -> return StatusCodes.Status200OK |> StatusCodeResult :> IActionResult
+            | Unauthorized ->
+                Unauthorized
                 |> string
                 |> redirect req resp
                 return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
-            | AuthState.Unauthenticated
-            | _ ->
-                AuthState.Unauthenticated
+            | Unauthenticated ->
+                Unauthenticated
                 |> string
                 |> redirect req resp
                 return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
@@ -88,12 +93,33 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
         |> Async.StartAsTask
 
 
-    [<HttpGet("_sti_auth")>]
+    [<HttpGet(AUTHNAME)>]
     member self.Auth() =
         async {
-            let req = self.HttpContext.Request
-            let resp = self.HttpContext.Response
-            let p = queryRedirect req
+            let req, resp, conn = Exts.Ctx self.HttpContext
+            let auth = authQuery req
+
+            match auth with
+            | Some(token, uri) ->
+                let policy =
+                    req.Host
+                    |> string
+                    |> cookiePolicy
+
+                resp.Cookies.Append(cookie.name, token, policy)
+                [ "Location", uri ] |> flip Exts.AddHeaders resp
+
+                return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
+            | None -> return StatusCodes.Status400BadRequest |> StatusCodeResult :> IActionResult
+        }
+        |> Async.StartAsTask
+
+
+    [<HttpGet(DEAUTHNAME)>]
+    member self.Deauth() =
+        async {
+            let req, resp, conn = Exts.Ctx self.HttpContext
+            let uri = sprintf "%s://%A:%d" req.Scheme req.Host conn.RemotePort
 
             let policy =
                 req.Host
@@ -101,6 +127,7 @@ type Authorize(logger: ILogger<Authorize>, deps: Container<Variables>) =
                 |> cookiePolicy
 
             resp.Cookies.Delete(cookie.name, policy)
+            [ "Location", uri ] |> flip Exts.AddHeaders resp
 
             return StatusCodes.Status307TemporaryRedirect |> StatusCodeResult :> IActionResult
         }

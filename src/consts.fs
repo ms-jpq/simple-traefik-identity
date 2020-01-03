@@ -32,6 +32,12 @@ https://ms-jpq.github.io/simple-traefik-identity/
     [<Literal>]
     let WEBSRVPORT = 6060
 
+    [<Literal>]
+    let AUTHNAME = "_sti_auth"
+
+    [<Literal>]
+    let DEAUTHNAME = "_sti_deauth"
+
     let DEFAULTTITLE = "Simple Traefik Identity"
 
     let BACKGROUND = "/assets/xp.jpg"

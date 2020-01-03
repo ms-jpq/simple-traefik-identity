@@ -13,8 +13,7 @@ module Rewrite =
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
                 async {
-                    let req = ctx.Request
-                    let conn = ctx.Connection
+                    let req, resp, conn = Exts.Ctx ctx
                     let find = Exts.Headers req |> flip Map.tryFind
 
                     conn.RemoteIpAddress <-
