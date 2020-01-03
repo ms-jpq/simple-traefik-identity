@@ -62,8 +62,7 @@ module Auth =
 
         let state =
             maybe {
-                let! c = cookie
-                let! claims = c |> readJWT opts
+                let! claims = cookie |> Option.bind (readJWT opts)
                 let! acc = AccessClaims.DeSerialize claims
                 let auth =
                     match acc.access with
