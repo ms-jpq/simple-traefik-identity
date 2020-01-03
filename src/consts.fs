@@ -24,7 +24,6 @@ STI is a Single Sign-On service for Traefik
 For basic usage, please reference
 https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/minimal_conf.yml
 -
-
 -
 For advanced usage, please reference
 https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/maximal_conf.yml
@@ -49,8 +48,6 @@ https://ms-jpq.github.io/simple-traefik-identity/
     let TOKENISSUER = "STI"
 
     let TOKENLIFESPAN = TimeSpan.FromHours(24.0)
-
-    let REMOTEADDR = "X-Forwarded-For"
 
     let RATETIMER = TimeSpan.FromSeconds(30.0)
 

@@ -10,7 +10,7 @@ module Rewrite =
 
     type RewriteMiddleware(next: RequestDelegate, deps: Variables Container) =
 
-        let ipHeader = deps.Boxed.rateLimit.header
+        let ipHeaders = deps.Boxed.rateLimit.headers
 
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
@@ -19,15 +19,18 @@ module Rewrite =
                     let find = Exts.Headers req |> flip Map.tryFind
 
                     conn.RemoteIpAddress <-
-                        find ipHeader
-                        |> Option.map string
-                        |> Option.bind ((Result.New IPAddress.Parse) >> Option.OfResult)
+                        ipHeaders
+                        |> Seq.tryPick find
+                        |> Option.orElse (find "X-Forwarded-For")
+                        |> Option.bind
+                            (string
+                             >> (Result.New IPAddress.Parse)
+                             >> Option.OfResult)
                         |> Option.Recover conn.RemoteIpAddress
 
                     conn.RemotePort <-
                         find "X-Forwarded-Port"
-                        |> Option.map string
-                        |> Option.bind Parse.Int
+                        |> Option.bind (string >> Parse.Int)
                         |> Option.Recover conn.RemotePort
 
                     req.Scheme <-
@@ -42,14 +45,18 @@ module Rewrite =
 
                     req.Host <-
                         find "X-Forwarded-Host"
-                        |> Option.map string
-                        |> Option.bind ((Result.New HostString) >> Option.OfResult)
+                        |> Option.bind
+                            (string
+                             >> (Result.New HostString)
+                             >> Option.OfResult)
                         |> Option.Recover req.Host
 
                     req.Path <-
                         find "X-Forwarded-Uri"
-                        |> Option.map string
-                        |> Option.bind ((Result.New PathString) >> Option.OfResult)
+                        |> Option.bind
+                            (string
+                             >> (Result.New PathString)
+                             >> Option.OfResult)
                         |> Option.Recover req.Path
 
 

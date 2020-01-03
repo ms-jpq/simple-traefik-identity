@@ -166,18 +166,22 @@ module Env =
 
 
     type RateLimit =
-        { header: string
+        { headers: string seq
           rate: int
           timer: TimeSpan }
 
         static member Def =
-            { header = REMOTEADDR
+            { headers = []
               rate = RATE
               timer = RATETIMER }
 
         static member Decoder =
             let resolve (get: Decode.IGetters) =
-                let header = get.Optional.Field "header" Decode.string |> Option.Recover RateLimit.Def.header
+                let headers =
+                    get.Optional.Field "header" (Decode.array Decode.string)
+                    |> Option.map Seq.ofArray
+                    |> Option.Recover RateLimit.Def.headers
+
                 let rate = get.Optional.Field "rate" Decode.int |> Option.Recover RateLimit.Def.rate
 
                 let timer =
@@ -185,7 +189,7 @@ module Env =
                     |> Option.bind Parse.Float
                     |> Option.map TimeSpan.FromSeconds
                     |> Option.Recover RateLimit.Def.timer
-                { header = header
+                { headers = headers
                   rate = rate
                   timer = timer }
 

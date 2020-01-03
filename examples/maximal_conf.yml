@@ -71,7 +71,10 @@ auth:
 rate_limit:
   # Use Cf-Connecting-Ip if Cloudflare, and so on
   # Defaults to X-Forwarded-For (No reverse proxies beyond Traefik)
-  header: Cf-Connecting-Ip
+  headers:
+    - Cf-Connecting-Ip
+    - Another-Header
+    - So-on
   rate: 5
   timer: 30
 
