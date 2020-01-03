@@ -102,7 +102,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> sprintf "🔐 -- Unauthorized -- 🔐\n%s"
                 |> logger.LogInformation
                 let html = Unauthorized.Render display
-                resp.StatusCode <- StatusCodes.Status407ProxyAuthenticationRequired
+                resp.StatusCode <- StatusCodes.Status403Forbidden
                 return self.Content(html, "text/html") :> ActionResult
             | Some Unauthenticated
             | _ ->
@@ -110,7 +110,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> sprintf "🔑 -- Authenticating -- 🔑\n%s"
                 |> logger.LogInformation
                 let html = Login.Render display
-                resp.StatusCode <- StatusCodes.Status407ProxyAuthenticationRequired
+                resp.StatusCode <- StatusCodes.Status401Unauthorized
                 return self.Content(html, "text/html") :> ActionResult
         }
         |> Async.StartAsTask
