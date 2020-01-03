@@ -5,7 +5,6 @@ open STI.Models.Auth
 open STI.Models.RateLimit
 open STI.State
 open STI.Views
-open STI.Consts
 open DomainAgnostic
 open DomainAgnostic.Globals
 open DotNetExtensions
@@ -40,7 +39,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
 
 
     [<HttpPost("")>]
-    [<HttpHeader("STI-Authorization")>]
+    [<HttpHeader("Sti-Authorization")>]
     member self.Authenticate() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
@@ -51,7 +50,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
             let token =
                 Exts.Headers req
                 |> Map.MapValues string
-                |> Map.tryFind "STI-Authorization"
+                |> Map.tryFind "Sti-Authorization"
                 |> Option.bind (newToken jwt model)
 
             let! st = state.Get()

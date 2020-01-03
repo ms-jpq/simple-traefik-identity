@@ -25,7 +25,7 @@ module Auth =
         | Unauthorized
         | Authorized
 
-    let decode (header: string) =
+    let private decode (header: string) =
         try
             let credentials = header.Split(" ")
             if credentials.[0] <> "Basic" then failwith "..."

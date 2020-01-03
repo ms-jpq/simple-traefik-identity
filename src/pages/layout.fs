@@ -3,7 +3,6 @@ namespace STI.Views
 open DomainAgnostic
 open Giraffe.GiraffeViewEngine
 open STI.Consts
-open System.IO
 
 
 module Layout =
