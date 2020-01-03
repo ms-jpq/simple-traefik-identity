@@ -182,7 +182,9 @@ section > div:nth-child(2) > span {
 
 
 section input[type="submit"] {
+  background: transparent;
   background-image: url("/assets/go.png");
   background-size: 100% 100%;
   width: 2.5em;
+  border: none;
 }

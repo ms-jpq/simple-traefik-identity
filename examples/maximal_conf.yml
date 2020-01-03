@@ -22,6 +22,11 @@ jwt:
     O Canada, we stand on guard for thee.
 
 auth:
+  # domains in the whitelist are whitelisted
+  whitelist:
+    - novascotia.com
+    - www.tourismpei.com
+
   # Set this for your base level domain
   # So you can avoid login for each subdomain
   base_domains:

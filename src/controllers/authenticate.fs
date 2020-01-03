@@ -32,7 +32,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
         policy.MaxAge <- cookie.maxAge |> Nullable
         policy.Domain <-
             model.baseDomains
-            |> Seq.tryFind (fun d -> domain.EndsWith(d))
+            |> Seq.tryFind domain.EndsWith
             |> Option.map ((+) ".")
             |> Option.Recover domain
 
@@ -108,7 +108,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
             let state =
                 Exts.Cookies req
                 |> Map.tryFind cookie.name
-                |> Option.bind (checkAuth jwt domain)
+                |> Option.bind (checkAuth jwt model domain)
 
             match state with
             | Some Authorized ->

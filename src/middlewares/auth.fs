@@ -15,6 +15,7 @@ module Auth =
 
         let cookie = deps.Boxed.cookie
         let jwt = deps.Boxed.jwt
+        let model = deps.Boxed.model
 
         member __.InvokeAsync(ctx: HttpContext) =
             let task =
@@ -25,7 +26,7 @@ module Auth =
                     let state =
                         Exts.Cookies req
                         |> Map.tryFind cookie.name
-                        |> Option.bind (checkAuth jwt domain)
+                        |> Option.bind (checkAuth jwt model domain)
 
                     match state with
                     | Some Authorized ->

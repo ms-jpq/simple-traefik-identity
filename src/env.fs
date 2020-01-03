@@ -93,6 +93,7 @@ module Env =
 
     type AuthModel =
         { baseDomains: string seq
+          whitelist: Uri seq
           users: User seq }
 
         static member Decoder =
@@ -141,6 +142,12 @@ module Env =
                     |> Option.Recover []
                     |> Seq.ofList
 
+                let whitelist =
+                    get.Optional.Field "whitelist" (Decode.list Decode.string)
+                    |> Option.Recover []
+                    |> Seq.ofList
+                    |> Seq.choose Parse.Uri
+
                 let groups =
                     get.Required.Field "groups"
                         (resovleG
@@ -153,6 +160,7 @@ module Env =
                          |> Decode.object
                          |> Decode.list) |> Seq.ofList
                 { baseDomains = baseDomains
+                  whitelist = whitelist
                   users = users }
 
             Decode.object resolve

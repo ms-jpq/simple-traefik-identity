@@ -57,16 +57,18 @@ module Auth =
         |> Option.map (tokenize opts)
 
 
-    let checkAuth opts (domain: string) cookie =
+    let checkAuth opts model (domain: string) cookie =
         maybe {
             let! claims = cookie |> readJWT opts
+            let contain = model.whitelist |> Seq.Contains(string >> domain.EndsWith)
 
-            let! model = AccessClaims.DeSerialize claims
+            let! acc = AccessClaims.DeSerialize claims
             let auth =
-                match model.access with
-                | All -> Authorized
-                | Named domains ->
-                    let contains = domains |> Seq.Contains(fun d -> domain.EndsWith(d))
+                match (contain, acc.access) with
+                | true, _
+                | _, All -> Authorized
+                | false, Named domains ->
+                    let contains = domains |> Seq.Contains domain.EndsWith
                     match contains with
                     | true -> Authorized
                     | false -> Unauthorized
