@@ -60,7 +60,7 @@ module Auth =
     let checkAuth opts model (domain: string) cookie =
         maybe {
             let! claims = cookie |> readJWT opts
-            let contain = model.whitelist |> Seq.Contains(string >> domain.EndsWith)
+            let contain = model.whitelist |> Seq.Contains domain.EndsWith
 
             let! acc = AccessClaims.DeSerialize claims
             let auth =
