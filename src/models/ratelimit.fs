@@ -20,12 +20,12 @@ module RateLimit =
         let go =
             hist
             |> Seq.Count((<) ago)
-            |> (<) limit.rate
+            |> (>=) limit.rate
 
         let next =
             hist
             |> Seq.Appending now
-            |> Seq.filter (fun d -> d > ago)
+            |> Seq.filter ((<) ago)
             |> flip (Map.add ip) history
 
         go, next
