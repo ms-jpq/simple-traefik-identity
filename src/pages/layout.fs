@@ -11,19 +11,19 @@ module Layout =
     let _css = sprintf "body { background-image: url(%s); }"
 
     let load js css =
-        (js, css)
+        (css, js)
         ||> sprintf """
         "use strict";
-        (([script, style]) => {
-          (async () => {
-            script.textContent = await (await fetch("%s")).text()
-            document.head.append(script)
-          })();
+        (([style, script]) => {
           (async () => {
             style.textContent = await (await fetch("%s")).text()
             document.head.append(style)
           })();
-        })(["script", "style"].map(t => document.createElement(t)));
+          (async () => {
+            script.textContent = await (await fetch("%s")).text()
+            document.head.append(script)
+          })();
+        })(["style", "script"].map(t => document.createElement(t)));
         """
 
 
