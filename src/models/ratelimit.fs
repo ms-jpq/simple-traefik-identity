@@ -19,7 +19,7 @@ module RateLimit =
         let go =
             hist
             |> Seq.Count((<) ago)
-            |> (>=) limit.rate
+            |> (>) limit.rate
 
         let next =
             hist
