@@ -5,10 +5,10 @@ const main = () => {
       const params = {
         method: "POST",
         headers: {
-          ["STI-Deauthorization"]: `👋`,
+          ["STI-Deauthorization"]: `-`,
         }
       }
-      return await (await fetch("/", params)).text()
+      return (await fetch("/", params)).text()
     } catch (e) {
       alert(e.message)
     }

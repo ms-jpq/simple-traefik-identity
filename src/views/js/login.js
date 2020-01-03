@@ -8,7 +8,7 @@ const main = () => {
           ["STI-Authorization"]: `Basic ${btoa(`${username}:${password}`)}`,
         }
       }
-      return await (await fetch("/", params)).json()
+      return (await fetch("/", params)).json()
     } catch (e) {
       alert(e.message)
     }
