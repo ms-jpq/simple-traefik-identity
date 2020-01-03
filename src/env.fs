@@ -5,8 +5,11 @@ open DomainAgnostic
 open Consts
 open Microsoft.Extensions.Logging
 open System
+open Newtonsoft.Json
+open Newtonsoft.Json.Converters
 open Thoth.Json.Net
 open YamlDotNet.Serialization
+open System.Dynamic
 open System.Text
 
 
@@ -59,7 +62,8 @@ module Env =
 
 
     type JWTopts =
-        { secret: byte array
+        { [<JsonIgnore>]
+          secret: byte array
           issuer: string }
 
         static member Decoder =
@@ -82,6 +86,7 @@ module Env =
 
     type User =
         { name: string
+          [<JsonIgnore>]
           password: string
           session: TimeSpan
           subDomains: Domains }
@@ -107,6 +112,7 @@ module Env =
             let resovleU (groups: (string * string seq) seq) (get: Decode.IGetters) =
                 let name = get.Required.Field "name" Decode.string
                 let password = get.Required.Field "password" Decode.string
+
                 let session =
                     get.Optional.Field "session" Decode.string
                     |> Option.bind Parse.Float
@@ -227,6 +233,10 @@ module Env =
                   display = display }
             Decode.object resolve
 
+        static member Desc(v: Variables) =
+            let json = JsonConvert.SerializeObject v
+            let expanded = JsonConvert.DeserializeObject<ExpandoObject>(json, ExpandoObjectConverter())
+            Serializer().Serialize(expanded)
 
 
     let Y2J(yaml: string) =
@@ -236,13 +246,18 @@ module Env =
 
 
     let Opts() =
-        ENV()
-        |> Map.tryFind APPCONF
-        |> Option.Recover CONFFILE
+        let conf =
+            ENV()
+            |> Map.tryFind APPCONF
+            |> Option.Recover CONFFILE
+        conf
         |> slurp
         |> Async.RunSynchronously
         |> Result.bind (Result.New Y2J)
-        |> Result.mapError string
+        |> Result.mapError
+            (conf
+             |> sprintf "☢️ -- Failed to load config %s -- ☢️"
+             |> constantly)
         |> Result.bind (Decode.fromString Variables.Decoder)
         |> Result.mapError Exception
         |> Result.ForceUnwrap

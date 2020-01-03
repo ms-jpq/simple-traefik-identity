@@ -15,6 +15,9 @@ module Entry =
         echo README
 
         let deps = Opts()
+        echo "🙆‍♀️ -- Options -- 🙆‍♀️"
+        Variables.Desc deps |> echo
+
         use state = new GlobalVar<State>({ history = Map.empty })
 
         use server = Server.Build deps state
