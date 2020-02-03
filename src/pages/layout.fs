@@ -7,7 +7,7 @@ open STI.Consts
 
 module Layout =
 
-    let _css = sprintf "body { background-image: url(%s); }"
+    let _css = sprintf "body { --background-image: url(%s); }"
 
     let load js css =
         (css, js)
@@ -33,6 +33,7 @@ module Layout =
                     meta
                         [ _name "viewport"
                           _content "width=device-width, initial-scale=1" ]
+                    style [] [ background |> _css |> str ]
                     title [] [ str tit ] ]
               body []
                   [ div [] []
@@ -46,8 +47,4 @@ module Layout =
                     div [] []
                     footer [] [ a [ _href PROJECTURI ] [ str "★ github ★" ] ]
                     div [] []
-                    script [] [ load js css |> rawText ]
-                    style []
-                        [ background
-                          |> _css
-                          |> str ] ] ]
+                    script [] [ load js css |> rawText ] ] ]

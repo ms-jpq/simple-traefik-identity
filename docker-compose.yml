@@ -14,7 +14,7 @@ services:
     environment:
       - TZ=${TZ}
     ports:
-      - 5050:5050
+      - 5555:5050
     volumes:
       - ./config/conf.yml:/sti/config/conf.yml
 
