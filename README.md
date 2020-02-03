@@ -17,9 +17,61 @@ Simple & Configurable -- SSO, for Traefik.
 
 ![logoff img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png)
 
+## Features
+
+### Role Based Access Control (RBAC)
+
+```yaml
+groups:
+  - name: quebec
+    sub_domains:
+      - "*"
+  - name: saskatchewan
+    sub_domains:
+      - canada.ca
+      - www.tourismnewbrunswick.ca
+  - name: newfoundland
+    sub_domains:
+      - www.gov.nu.ca
+
+users:
+  - name: yukon
+    password: yukon
+    session: 0.5
+    groups:
+      - quebec
+  - name: nunavut
+    password: nunavut
+    groups:
+      - saskatchewan
+      - newfoundland
+```
+
+### Rate Limit
+
+```yaml
+rate_limit:
+  headers:
+    - Cf-Connecting-Ip
+    - Another-Header
+    - So-on
+  rate: 5
+  timer: 30
+```
+
+### Custom UI
+
+```yaml
+display:
+  title: Simple Traefik Identity
+  background: |-
+    https://github.com/ms-jpq/simple-traefik-identity/raw/master/src/views/assets/xp.jpg
+```
+
+
 ## Usage
 
-## Customization
+
 
 ## Security
 
