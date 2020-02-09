@@ -29,10 +29,16 @@ module Auth =
                         |> checkAuth jwt model domain
 
                     match state with
-                    | Some Authorized ->
+                    | Some Whitelisted ->
+                        req.GetDisplayUrl()
+                        |> sprintf "✅ -- Whitelisted -- ✅\n%s"
+                        |> logger.LogInformation
+                        resp.StatusCode <- StatusCodes.Status204NoContent
+                    | Some(Authorized(user)) ->
                         req.GetDisplayUrl()
                         |> sprintf "✅ -- Authorized -- ✅\n%s"
                         |> logger.LogInformation
+
                         resp.StatusCode <- StatusCodes.Status204NoContent
                     | _ -> do! next.Invoke(ctx) |> Async.AwaitTask
                 }

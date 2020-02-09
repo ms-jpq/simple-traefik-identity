@@ -88,7 +88,7 @@ module Env =
         { name: string
           [<JsonIgnore>]
           password: string
-          session: TimeSpan
+          loginSession: TimeSpan
           subDomains: Domains }
 
     type AuthModel =
@@ -115,9 +115,9 @@ module Env =
                 let password = get.Required.Field "password" Decode.string
 
                 let session =
-                    get.Optional.Field "session" Decode.string
+                    get.Optional.Field "login_days" Decode.string
                     |> Option.bind Parse.Float
-                    |> Option.map TimeSpan.FromHours
+                    |> Option.map TimeSpan.FromDays
                     |> Option.Recover TOKENLIFESPAN
 
                 let chk =
@@ -133,7 +133,7 @@ module Env =
 
                 { name = name
                   password = password
-                  session = session
+                  loginSession = session
                   subDomains = subDomains }
 
             let resolve (get: Decode.IGetters) =

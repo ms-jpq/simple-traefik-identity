@@ -10,7 +10,8 @@ open Newtonsoft.Json
 module Auth =
 
     type AccessClaims =
-        { access: Domains }
+        { user: string
+          access: Domains }
 
         static member Serialize(claim: AccessClaims) = claim |> JsonConvert.SerializeObject
 
@@ -22,7 +23,8 @@ module Auth =
     type AuthState =
         | Unauthenticated
         | Unauthorized
-        | Authorized
+        | Whitelisted
+        | Authorized of string
 
     let private decode (header: string) =
         try
@@ -46,8 +48,10 @@ module Auth =
         model.users |> Seq.tryFind seek
 
     let private tokenize opts (user: User) =
-        let access = { access = user.subDomains }
-        AccessClaims.Serialize access |> newJWT opts user.session
+        let access =
+            { user = user.name
+              access = user.subDomains }
+        AccessClaims.Serialize access |> newJWT opts user.loginSession
 
 
     let newToken opts model header =
@@ -66,14 +70,14 @@ module Auth =
                 let! acc = AccessClaims.DeSerialize claims
                 let auth =
                     match acc.access with
-                    | All -> Authorized
+                    | All -> Authorized acc.user
                     | Named domains ->
                         let contains = domains |> Seq.Contains domain.EndsWith
                         match contains with
-                        | true -> Authorized
+                        | true -> Authorized acc.user
                         | false -> Unauthorized
                 return auth
             }
         match contain with
-        | true -> Some Authorized
+        | true -> Some Whitelisted
         | false -> state

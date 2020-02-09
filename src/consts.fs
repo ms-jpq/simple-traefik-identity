@@ -37,6 +37,8 @@ https://ms-jpq.github.io/simple-traefik-identity/
     [<Literal>]
     let WEBSRVPORT = 6060
 
+    let FORWARDHEADER = "X-Forwarded-User"
+
     let DEFAULTTITLE = "Simple Traefik Identity"
 
     let BACKGROUND = "/assets/xp.jpg"
@@ -47,7 +49,7 @@ https://ms-jpq.github.io/simple-traefik-identity/
 
     let TOKENISSUER = "STI"
 
-    let TOKENLIFESPAN = TimeSpan.FromHours(24.0)
+    let TOKENLIFESPAN = TimeSpan.FromDays(7.0)
 
     let RATETIMER = TimeSpan.FromSeconds(30.0)
 

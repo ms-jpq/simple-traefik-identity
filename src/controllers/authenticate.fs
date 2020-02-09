@@ -111,7 +111,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
                 |> checkAuth jwt model domain
 
             match state with
-            | Some Authorized ->
+            | Some(Authorized(user)) ->
                 assert (false)
                 return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
             | Some Unauthorized ->

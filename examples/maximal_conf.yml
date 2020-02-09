@@ -51,9 +51,9 @@ auth:
     # Yukon has access to all the gucci
     - name: yukon
       password: yukon
-      # Yukon's login session only lasts 30 minutes
-      # Default is 24 hours
-      session: 0.5
+      # Yukon's login session only lasts 1 day
+      # Default is 7 days
+      login_days: 1.0
       groups:
         - quebec
     # nunavut has access to
