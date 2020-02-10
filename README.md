@@ -1,6 +1,6 @@
 # [Simple Traefik Identity](https://ms-jpq.github.io/simple-traefik-identity/)
 
-[![Docker Pulls](https://img.shields.io/docker/pulls/msjpq/simple-traefik-identity.svg)](https://hub.docker.com/r/msjpq/simple-traefik-identity.svg/)
+[![Docker Pulls](https://img.shields.io/docker/pulls/msjpq/simple-traefik-identity.svg)](https://hub.docker.com/r/msjpq/simple-traefik-identity/)
 
 Simple & Configurable -- SSO, for Traefik.
 
