@@ -1,4 +1,4 @@
-const main = () => {
+document.addEventListener("DOMContentLoaded", () => {
 
   const query = async (username, password) => {
     try {
@@ -33,6 +33,4 @@ const main = () => {
   form.querySelector(`input[name="username"]`).focus()
 
   console.log("🙆‍♀️ -- Form Ready -- 🙆‍♀️")
-}
-
-main()
+})

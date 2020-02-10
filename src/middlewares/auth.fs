@@ -36,7 +36,7 @@ module Auth =
                         resp.StatusCode <- StatusCodes.Status204NoContent
                     | Some(Authorized(user)) ->
                         req.GetDisplayUrl()
-                        |> sprintf "✅ -- Authorized -- ✅\n%s"
+                        |> sprintf "✅ -- Authorized: %s -- ✅\n%s" user
                         |> logger.LogInformation
                         [ model.forwardHeader, user ] |> flip Exts.AddHeaders resp
                         resp.StatusCode <- StatusCodes.Status204NoContent

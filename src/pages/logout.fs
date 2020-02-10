@@ -15,7 +15,7 @@ module Logout =
                   _value " " ] ]
 
     let Render(display: Display) =
-        let js = "/js/logout.js"
-        let css = "/css/logout.css"
+        let js = [ "/js/logout.js" ]
+        let css = [ "/css/base.css"; "/css/logout.css" ]
         let nodes = Layout js css display.background display.title [ logout ]
         nodes |> renderHtmlDocument

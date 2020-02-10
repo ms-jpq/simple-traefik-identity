@@ -1,4 +1,4 @@
-const main = () => {
+document.addEventListener("DOMContentLoaded", () => {
 
   const query = async () => {
     try {
@@ -24,6 +24,4 @@ const main = () => {
   form.onsubmit = submit
 
   console.log("🙆‍♀️ -- Form Ready -- 🙆‍♀️")
-}
-
-main()
+})

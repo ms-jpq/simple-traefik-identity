@@ -36,8 +36,8 @@ module Login =
           div [] [] ]
 
 
-    let Render (display: Display) =
-        let js = "/js/login.js"
-        let css = "/css/login.css"
+    let Render(display: Display) =
+        let js = [ "/js/login.js" ]
+        let css = [ "/css/base.css"; "/css/login.css" ]
         let nodes = Layout js css display.background display.title login
         nodes |> renderHtmlDocument
