@@ -92,7 +92,8 @@ module Env =
           subDomains: Domains }
 
     type AuthModel =
-        { baseDomains: string seq
+        { forwardHeader: string
+          baseDomains: string seq
           whitelist: string seq
           users: User seq }
 
@@ -115,7 +116,7 @@ module Env =
                 let password = get.Required.Field "password" Decode.string
 
                 let session =
-                    get.Optional.Field "login_days" Decode.string
+                    get.Optional.Field "session" Decode.string
                     |> Option.bind Parse.Float
                     |> Option.map TimeSpan.FromDays
                     |> Option.Recover TOKENLIFESPAN
@@ -158,7 +159,8 @@ module Env =
                          |> resovleU
                          |> Decode.object
                          |> Decode.list) |> Seq.ofList
-                { baseDomains = baseDomains
+                { forwardHeader = FORWARDHEADER
+                  baseDomains = baseDomains
                   whitelist = whitelist
                   users = users }
 

@@ -4,7 +4,6 @@
 
 Simple & Configurable -- SSO, for Traefik.
 
-
 ## Preview
 
 ### Logon
@@ -37,7 +36,7 @@ groups:
 users:
   - name: yukon
     password: yukon
-    session: 0.5
+    session: 0.5 # logs you out after half a day
     groups:
       - quebec
   - name: nunavut
@@ -68,10 +67,22 @@ display:
     https://github.com/ms-jpq/simple-traefik-identity/raw/master/src/views/assets/xp.jpg
 ```
 
-
 ## Usage
 
+See [minimal](https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/minimal_conf.yml) and [maximal](https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/maximal_conf.yml) to get started.
 
+```yaml
+  sti:
+    image: msjpq/simple-traefik-identity
+    container_name: sti
+    labels:
+      - traefik.http.services.sti.loadbalancer.server.port=5050
+      - traefik.http.middlewares.auth.forwardauth.address=http://sti
+    ports:
+      - 5050:5050
+    volumes:
+      - ./config/conf.yml:/sti/config/conf.yml
+```
 
 ## Security
 

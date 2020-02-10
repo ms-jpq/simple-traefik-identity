@@ -113,6 +113,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
             match state with
             | Some(Authorized(user)) ->
                 assert (false)
+                [ model.forwardHeader, user ] |> flip Exts.AddHeaders resp
                 return StatusCodes.Status204NoContent |> StatusCodeResult :> ActionResult
             | Some Unauthorized ->
                 req.GetDisplayUrl()

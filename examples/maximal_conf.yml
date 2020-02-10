@@ -53,7 +53,7 @@ auth:
       password: yukon
       # Yukon's login session only lasts 1 day
       # Default is 7 days
-      login_days: 1.0
+      session: 1.0
       groups:
         - quebec
     # nunavut has access to

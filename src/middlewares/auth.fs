@@ -38,7 +38,7 @@ module Auth =
                         req.GetDisplayUrl()
                         |> sprintf "✅ -- Authorized -- ✅\n%s"
                         |> logger.LogInformation
-
+                        [ model.forwardHeader, user ] |> flip Exts.AddHeaders resp
                         resp.StatusCode <- StatusCodes.Status204NoContent
                     | _ -> do! next.Invoke(ctx) |> Async.AwaitTask
                 }
