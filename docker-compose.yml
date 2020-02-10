@@ -10,31 +10,28 @@ services:
     labels:
       - traefik.http.routers.sti.entrypoints=traefik
       - traefik.http.services.sti.loadbalancer.server.port=5050
-      - traefik.http.middlewares.auth.forwardauth.address=http://sti
+      - traefik.http.middlewares.auth.forwardauth.address=http://sti:5050
+      - traefik.http.middlewares.auth.forwardauth.authResponseHeaders=X-Forwarded-User
     environment:
       - TZ=${TZ}
     ports:
-      - 5555:5050
+      - 5050:5050
     volumes:
       - ./config/conf.yml:/sti/config/conf.yml
 
   traefik:
     image: traefik
     container_name: traefik
-    labels:
-      - traefik.http.services.traefik.loadbalancer.server.port=8080
-      - traefik.http.routers.traefik.middlewares=auth
-      - traefik.http.routers.traefik.rule=HostRegexp("{any:.*}") && PathPrefix("/dashboard", "/api")
     environment:
       - TZ=${TZ}
     ports:
       - 8080:80
       - 8888:8080
     command: >
-      - --providers.docker.watch=true
-      - --api.insecure=true
-      - --api.dashboard=true
-      - --log.level=DEBUG
+      --providers.docker.watch=true
+      --api.insecure=true
+      --api.dashboard=true
+      --log.level=DEBUG
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
 
@@ -44,6 +41,6 @@ services:
     labels:
       - traefik.http.services.whoami.loadbalancer.server.port=80
       - traefik.http.routers.whoami.middlewares=auth
-      - traefik.http.routers.whoami.rule=HostRegexp("{any:.*}")
+      - traefik.http.routers.whoami.rule=PathPrefix("/")
     environment:
       - TZ=${TZ}

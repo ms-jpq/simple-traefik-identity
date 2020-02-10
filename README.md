@@ -77,7 +77,7 @@ See [minimal](https://github.com/ms-jpq/simple-traefik-identity/blob/master/exam
     container_name: sti
     labels:
       - traefik.http.services.sti.loadbalancer.server.port=5050
-      - traefik.http.middlewares.auth.forwardauth.address=http://sti
+      - traefik.http.middlewares.auth.forwardauth.address=http://sti:5050
       - traefik.http.middlewares.auth.forwardauth.authResponseHeaders=X-Forwarded-User
     volumes:
       - ./config/conf.yml:/sti/config/conf.yml
