@@ -1,3 +1,12 @@
 theme: jekyll-theme-cayman
 
 title: Simple Traefik Identity
+
+showcase: True
+
+desc: >-
+   Simple & Configurable -- SSO, for Traefik.
+  
+images:
+  - https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png
+  - https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png
