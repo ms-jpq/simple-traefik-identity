@@ -8,13 +8,13 @@ Simple & Configurable -- SSO, for Traefik.
 
 ### Logon
 
-![login img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png)
+[login img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png)
 
 ### Logoff
 
 (if not authorized, you can login via another account)
 
-![logoff img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png)
+[logoff img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png)
 
 ## Features
 
