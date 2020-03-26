@@ -17,7 +17,7 @@ module Layout =
 
     let loadJS js =
         js
-        |> Seq.map (loadContent >> (fun c -> script [ _defer ] [ rawText c ]))
+        |> Seq.map (loadContent >> (fun c -> script [] [ rawText c ]))
         |> Seq.toList
 
     let loadCSS css =
