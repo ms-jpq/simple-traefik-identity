@@ -5,7 +5,7 @@ title: Simple Traefik Identity
 showcase: True
 
 desc: >-
-   Simple & Configurable -- SSO, for Traefik.
+   Simple & Configurable -- single sign-on auth, for Traefik.
   
 images:
   - https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png
