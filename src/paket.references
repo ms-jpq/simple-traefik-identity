@@ -3,4 +3,4 @@ Thoth.Json.Net
 YamlDotnet
 System.IdentityModel.Tokens.Jwt
 
-File: GiraffeViewEngine.fs
+File: src/Giraffe/GiraffeViewEngine.fs giraffe-fsharp/Giraffe

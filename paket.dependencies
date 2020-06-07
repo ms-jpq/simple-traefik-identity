@@ -7,4 +7,4 @@ nuget System.IdentityModel.Tokens.Jwt
 
 
 github ms-jpq/fda
-github giraffe-fsharp/Giraffe:4c1e553941e382907bdc279257d1b8549ebd79c8 src/Giraffe/GiraffeViewEngine.fs
+github giraffe-fsharp/Giraffe:4c1e553941e382907bdc279257d1b8549ebd79c8
