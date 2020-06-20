@@ -1,12 +1,9 @@
-name: CI
+name: Release
 
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - xp
   schedule:
     - cron: "0 0 * * *" # daily
 
