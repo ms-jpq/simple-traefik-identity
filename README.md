@@ -8,13 +8,13 @@ Simple & Configurable -- SSO, for Traefik.
 
 ### Logon
 
-![login img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png)
+![login img](https://github.com/ms-jpq/simple-traefik-identity/raw/xp/preview/login.png)
 
 ### Logoff
 
 (if not authorized, you can login via another account)
 
-![logoff img](https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png)
+![logoff img](https://github.com/ms-jpq/simple-traefik-identity/raw/xp/preview/logoff.png)
 
 ## Features
 
@@ -64,12 +64,12 @@ rate_limit:
 display:
   title: Simple Traefik Identity
   background: |-
-    https://github.com/ms-jpq/simple-traefik-identity/raw/master/src/views/assets/xp.jpg
+    https://github.com/ms-jpq/simple-traefik-identity/raw/xp/src/views/assets/xp.jpg
 ```
 
 ## Usage
 
-See [minimal](https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/minimal_conf.yml) and [maximal](https://github.com/ms-jpq/simple-traefik-identity/blob/master/examples/maximal_conf.yml) to get started.
+See [minimal](https://github.com/ms-jpq/simple-traefik-identity/blob/xp/examples/minimal_conf.yml) and [maximal](https://github.com/ms-jpq/simple-traefik-identity/blob/xp/examples/maximal_conf.yml) to get started.
 
 ```yaml
   sti:
