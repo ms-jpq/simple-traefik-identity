@@ -6,5 +6,5 @@ desc: >-
    Simple & Configurable -- single sign-on auth, for Traefik.
   
 images:
-  - https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/login.png
-  - https://github.com/ms-jpq/simple-traefik-identity/raw/master/preview/logoff.png
+  - https://github.com/ms-jpq/simple-traefik-identity/raw/xp/preview/login.png
+  - https://github.com/ms-jpq/simple-traefik-identity/raw/xp/preview/logoff.png
