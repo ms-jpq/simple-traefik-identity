@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const params = {
         method: "POST",
         headers: {
-          ["STI-Authorization"]: `Basic ${btoa(`${username}:${password}`)}`,
+          Authorization: `Basic ${btoa(`${username}:${password}`)}`,
         }
       }
       return (await fetch("/", params)).json()
