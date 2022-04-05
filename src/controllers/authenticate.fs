@@ -40,7 +40,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
 
 
     [<HttpPost("")>]
-    [<HttpHeader("Sti-Authorization")>]
+    [<HttpHeader("Authorization")>]
     member self.Authenticate() =
         async {
             let req, resp, conn = Exts.Ctx self.HttpContext
@@ -51,7 +51,7 @@ type Authenticate(logger: ILogger<Authenticate>, deps: Container<Variables>, sta
             let token =
                 Exts.Headers req
                 |> Map.MapValues string
-                |> Map.tryFind "Sti-Authorization"
+                |> Map.tryFind "Authorization"
                 |> Option.bind (newToken jwt model)
 
             let ip = conn.RemoteIpAddress |> string
